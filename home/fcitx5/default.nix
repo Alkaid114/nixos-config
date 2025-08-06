@@ -2,7 +2,8 @@
 
 {
   i18n.inputMethod = {
-    enabled = "fcitx5";
+    type = "fcitx5";
+    enable = true;
     fcitx5 = {
       waylandFrontend = true; # 使用 Wayland
       addons = 
@@ -24,6 +25,6 @@
             kdePackages.fcitx5-qt   # Qt 支持（KDE 用户）
             fcitx5-chinese-addons
         ];
-    }
+    };
   };
 }

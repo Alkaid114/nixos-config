@@ -25,8 +25,9 @@
 
   home.packages = with pkgs; [
     zsh-powerlevel10k
+    zsh
   ];
 
   # 添加 p10k 配置文件（你可以用 p10k configure 生成）
-  home.file.".p10k.zsh".text = builtins.readFile ./p10k.zsh;
+  home.file.".p10k.zsh".text = builtins.readFile ./.p10k.zsh;
 }
