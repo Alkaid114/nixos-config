@@ -20,12 +20,19 @@
         # in
         with pkgs; [
             # fcitx5-rime
-            fcitx5-configtool
+            # fcitx5-configtool
+            # fcitx5-lua
+            # kdePackages.fcitx5-configtool
             # fcitx5-with-plugins	
-            fcitx5-gtk               # GTK 支持
+            # fcitx5-gtk               # GTK 支持
             # kdePackages.fcitx5-qt   # Qt 支持（KDE 用户）
+            # fcitx5-chinese-addons
+        ] ++ (with kdePackages;
+          [
             fcitx5-chinese-addons
-        ];
+            fcitx5-with-addons
+          ]
+        );
     };
   };
 

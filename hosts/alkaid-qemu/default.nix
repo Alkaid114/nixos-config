@@ -29,7 +29,15 @@
 
   environment.systemPackages = with pkgs; [
    spice-vdagent
+   xorg.xf86videoqxl
+   mesa
+   libglvnd
   ];
+
+  services.xserver.videoDrivers = [ "virtio" ]; # 或 "qxl" 取决于你的视频设备
+
+  hardware.graphics.enable = true;
+  hardware.graphics.enable32Bit = true;
 
   services.spice-vdagentd.enable = true;
   services.qemuGuest.enable = true;
