@@ -7,18 +7,9 @@
   ...
 }: {
   imports = [
-    ../../modules/system.nix
-    ../../modules/hyprland.nix
-
     # Include the results of the hardware scan.
     ./hardware-configuration.nix
   ];
-
-  environment.variables = {
-    # GDK_SCALE = "1";
-    # GDK_DPI_SCALE = "1.5";
-    # QT_SCALE_FACTOR = "1.5";
-  };
 
   # Bootloader.
   boot.loader = {

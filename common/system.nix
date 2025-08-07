@@ -8,16 +8,15 @@
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.${username} = {
+    name = username;
     isNormalUser = true;
     description = username;
-    extraGroups = ["networkmanager" "wheel"];
+    shell = pkgs.zsh;
+    initialPassword = 114514;
+    extraGroups = ["networkmanager" "wheel" "docker"];
   };
-  # given the users in this list the right to specify additional substituters via:
-  #    1. `nixConfig.substituers` in `flake.nix`
-  #    2. command line args `--options substituers http://xxx`
   nix.settings.trusted-users = [username];
 
-  # customise /etc/nix/nix.conf declaratively via `nix.settings`
   nix.settings = {
     # enable flakes globally
     experimental-features = ["nix-command" "flakes"];
@@ -38,7 +37,14 @@
     builders-use-substitutes = true;
   };
 
+  home = {
+    inherit username;
+    homeDirectory = "/home/${username}";
+    stateVersion = "25.05";
+  };
 
+  # Let Home Manager install and manage itself.
+  programs.home-manager.enable = true;
   
 
   # do garbage collection weekly to keep disk usage low
@@ -146,11 +152,9 @@
     git
     lm_sensors # for `sensors` command
     fastfetch
-    google-chrome
-    distrobox
   ];
 
-  virtualisation.docker.enable = true;
+  
 
   # Enable sound with pipewire.
   services.pulseaudio.enable = false;

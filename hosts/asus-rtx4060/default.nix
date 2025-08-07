@@ -8,18 +8,9 @@
   ...
 }: {
   imports = [
-    ../../modules/system.nix
-    
-    ../../modules/hyprland.nix
     # Include the results of the hardware scan.
     ./hardware-configuration.nix
   ];
-
-  environment.variables = {
-    GDK_SCALE = "1";
-    GDK_DPI_SCALE = "1.5";
-    QT_SCALE_FACTOR = "1.5";
-  };
 
   # Bootloader.
   boot.loader = {
@@ -27,14 +18,14 @@
       canTouchEfiVariables = true;
       efiSysMountPoint = "/boot"; # ← use the same mount point here.
     };
-    systemd-boot.enable = true;
-    # grub = {
-    #   enable = true;
-    #   device = "/dev/sda"; #  "nodev"
-    #   efiSupport = false;
-    #   useOSProber = true;
-    #   #efiInstallAsRemovable = true; # in case canTouchEfiVariables doesn't work for your system
-    # };
+    # systemd-boot.enable = true;
+    grub = {
+      enable = true;
+      device = "nodev"; #  "nodev"
+      efiSupport = true;
+      # useOSProber = true;
+      #efiInstallAsRemovable = true; # in case canTouchEfiVariables doesn't work for your system
+    };
   };
 
   hardware.enableAllFirmware = true;
@@ -64,6 +55,7 @@
   # 禁用开源nvidia驱动
   boot.kernelParams = [ "modprobe.blacklist=nouveau" ];	
   boot.blacklistedKernelModules = [ "nouveau" ];
+  
   # Configure network proxy if necessary
   # networking.proxy.default = "http://user:password@proxy:port/";
   # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
