@@ -2,6 +2,7 @@
 {
   imports = [
     ../../common/plasma.nix
+    # ../../common/secureBoot.nix
   ];
   services = {
     xserver = {

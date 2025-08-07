@@ -148,7 +148,7 @@
     })
   ];
 
-  
+  boot.kernelPackages = pkgs.linuxPackages_latest;
 
   # Enable sound with pipewire.
   services.pulseaudio.enable = false;

@@ -24,7 +24,7 @@
       enable = true;
       device = "nodev"; #  "nodev"
       efiSupport = true;
-      # useOSProber = true;
+      useOSProber = true;  # 自动检测 Windows
       #efiInstallAsRemovable = true; # in case canTouchEfiVariables doesn't work for your system
     };
   };
@@ -56,6 +56,54 @@
   # 禁用开源nvidia驱动
   boot.kernelParams = [ "modprobe.blacklist=nouveau" ];	
   boot.blacklistedKernelModules = [ "nouveau" ];
+
+  services.supergfxd.enable = true;
+
+  services = {
+    asusd = {
+      enable = true;
+      enableUserService = true;
+    };
+  };
+
+  # systemd.services.sign-nvidia-module = {
+  #   description = "Sign NVIDIA kernel module with MOK key";
+  #   wantedBy = [ "multi-user.target" ];
+  #   after = [ "generate-mok-key.service" ];
+  #   serviceConfig = {
+  #     Type = "oneshot";
+  #     ExecStart = ''
+  #       key="/etc/secureboot/MOK.key"
+  #       cert="/etc/secureboot/MOK.crt"
+  #       modpath=$(modinfo -n nvidia)
+
+  #       if [ -f "$modpath" ]; then
+  #         /lib/modules/$(uname -r)/build/scripts/sign-file sha256 "$key" "$cert" "$modpath"
+  #       fi
+  #     '';
+  #   };
+  # };
+
+  # system.activationScripts.signEfiAndModules = {
+  #   text = ''
+  #     PATH=${pkgs.lib.makeBinPath [ pkgs.sbsigntool pkgs.kmod pkgs.openssl ]}
+  #     key="/etc/secureboot/MOK.key"
+  #     cert="/etc/secureboot/MOK.crt"
+
+  #     # 签名 NVIDIA 驱动模块
+  #     nvidia_mod=$(modinfo -n nvidia || true)
+  #     if [ -f "$nvidia_mod" ]; then
+  #       sign_file="/lib/modules/$(uname -r)/build/scripts/sign-file"
+  #       if [ -x "$sign_file" ]; then
+  #         "$sign_file" sha256 "$key" "$cert" "$nvidia_mod"
+  #       fi
+  #     fi
+  #   '';
+  # };
+
+
+  # systemd.services.supergfxd.path = [ pkgs.pciutils ];
+
   
   # Configure network proxy if necessary
   # networking.proxy.default = "http://user:password@proxy:port/";

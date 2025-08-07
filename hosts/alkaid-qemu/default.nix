@@ -23,6 +23,7 @@
       enable = true;
       device = "nodev"; #  
       efiSupport = true;
+      useOSProber = true;  # 自动检测 Windows
       #efiInstallAsRemovable = true; # in case canTouchEfiVariables doesn't work for your system
     };
   };
