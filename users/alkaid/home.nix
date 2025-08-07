@@ -1,4 +1,4 @@
-{pkgs,inputs, ...}: {
+{pkgs,inputs,username, ...}: {
   imports = [
     ./fcitx5.nix
     ./shell

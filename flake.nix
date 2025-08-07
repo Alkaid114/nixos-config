@@ -19,6 +19,9 @@
 
  outputs = { self, nixpkgs, home-manager, ... }@inputs: 
  let 
+  vars = import ./vars.nix;
+  STATE_VERSION = vars.STATE_VERSION;
+
   mkHost = 
     {hostname, username}:
         nixpkgs.lib.nixosSystem {
@@ -26,6 +29,8 @@
           specialArgs = {
             inputs = inputs;
             hostname = hostname;
+            username = username;
+            STATE_VERSION = STATE_VERSION;
           };
           modules = [
             ./hosts/${hostname}
@@ -37,21 +42,29 @@
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
 
-              home-manager.users.${username} = import ./users/${username}/home.nix;
-              
-              # home-manager.extraSpecialArgs = {
-              #   # inherit (inputs) plasma-manager;
-              #   inherit username;
-              #   inherit hostname;
-              # };
+              home-manager.users.${username} = {
+                home = {
+                  inherit username;
+                  homeDirectory = "/home/${username}";
+                  stateVersion = STATE_VERSION;
+                };
+
+                # 引入用户个性化配置
+                imports = [ ./users/${username}/home.nix ];
+              };
+              home-manager.extraSpecialArgs = {
+                # inherit (inputs) plasma-manager;
+                inherit username;
+                inherit hostname;
+              };
             }
           ];
         };
 in
  {
     nixosConfigurations = {
-      alkaid-qemu = mkHost {hostname="alkaid-qemu";username="alkaid"};
-      asus-rtx4060 = mkHost {hostname="asus-rtx4060";username="alkaid"};
-    }
+      alkaid-qemu = mkHost {hostname="alkaid-qemu";username="alkaid";};
+      asus-rtx4060 = mkHost {hostname="asus-rtx4060";username="alkaid";};
+    };
  };
 }

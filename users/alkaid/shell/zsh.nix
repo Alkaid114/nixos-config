@@ -1,4 +1,4 @@
-{pkgs,config, ...}:
+{pkgs,config,username, ...}:
 {
   home.packages = with pkgs;[
     zsh-powerlevel10k
@@ -9,18 +9,13 @@
   programs.zsh = {
     enable = true;
     enableCompletion = true;
-    enableBashCompletion = true;
-    autosuggestions.enable = true;
+    autosuggestion.enable = true;
     syntaxHighlighting.enable = true;
-    autosuggestions.enable = true;
-    syntaxHighlighting.enable = true;
-    # promptInit = ''
-    #   source ${pkgs.zsh-powerlevel10k}/share/zsh-powerlevel10k/powerlevel10k.zsh-theme
-    #   [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
-    # '';
-    # ohMyZsh = {
-    #   enable = true;
-    #   plugins = [ "git" "history" "z" ];
-    # };
+    initContent = ''
+    # Powerlevel10k configuration
+    [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+
+    source ${pkgs.zsh-powerlevel10k}/share/zsh-powerlevel10k/powerlevel10k.zsh-theme
+    '';
   };
 }

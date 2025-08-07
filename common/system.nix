@@ -10,9 +10,9 @@
   users.users.${username} = {
     name = username;
     isNormalUser = true;
-    description = username;
     shell = pkgs.zsh;
-    initialPassword = 114514;
+    description = username;
+    initialPassword = "114514";
     extraGroups = ["networkmanager" "wheel" "docker"];
   };
   nix.settings.trusted-users = [username];
@@ -36,17 +36,7 @@
     ];
     builders-use-substitutes = true;
   };
-
-  home = {
-    inherit username;
-    homeDirectory = "/home/${username}";
-    stateVersion = "25.05";
-  };
-
-  # Let Home Manager install and manage itself.
-  programs.home-manager.enable = true;
   
-
   # do garbage collection weekly to keep disk usage low
   nix.gc = {
     automatic = lib.mkDefault true;
