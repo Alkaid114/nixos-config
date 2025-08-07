@@ -21,9 +21,9 @@
     # };
   };
 
- outputs = { self, nixpkgs, home-manager, plasma-manager, ... }@inputs: {
+ outputs = { self, nixpkgs, home-manager, ... }@inputs: {
   nixosConfigurations = {
-    alkaid-nixos = let
+    alkaid-qemu = let
       username = "alkaid";
       specialArgs = inputs // { inherit username; };
     in 
@@ -34,7 +34,7 @@
         modules = [
           # 这里导入之前我们使用的 configuration.nix，
           # 这样旧的配置文件仍然能生效
-          ./hosts/alkaid-nixos
+          ./hosts/alkaid-qemu/default.nix
           ./users/${username}/nixos.nix
 
           # 将 home-manager 配置为 nixos 的一个 module
@@ -71,7 +71,7 @@
         modules = [
           # 这里导入之前我们使用的 configuration.nix，
           # 这样旧的配置文件仍然能生效
-          ./hosts/asus-rtx4060
+          ./hosts/asus-rtx4060/default.nix
           ./users/${username}/nixos.nix
 
           # 将 home-manager 配置为 nixos 的一个 module

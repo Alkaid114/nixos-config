@@ -4,14 +4,22 @@
 {
   config,
   pkgs,
+  username,
   ...
 }: {
   imports = [
     ../../modules/system.nix
-
+    
+    ../../modules/hyprland.nix
     # Include the results of the hardware scan.
     ./hardware-configuration.nix
   ];
+
+  environment.variables = {
+    GDK_SCALE = "1";
+    GDK_DPI_SCALE = "1.5";
+    QT_SCALE_FACTOR = "1.5";
+  };
 
   # Bootloader.
   boot.loader = {
@@ -29,9 +37,33 @@
     # };
   };
 
+  hardware.enableAllFirmware = true;
   networking.hostName = "asus-rtx4060"; # Define your hostname.
-  # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
+  networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
 
+
+  # 使用 NVIDIA 和 AMD 驱动
+  services.xserver.videoDrivers = [ "nvidia" "amdgpu" ];
+
+  # NVIDIA 驱动配置
+  hardware.nvidia = {
+    modesetting.enable = true;     # 必须启用，Wayland 依赖
+    open = false;                  # 使用闭源驱动
+    nvidiaSettings = true;
+    powerManagement.enable = false;
+    package = config.boot.kernelPackages.nvidiaPackages.stable;
+    prime = {
+      sync.enable = false;         # 禁用 PRIME sync
+      offload.enable = false;      # 禁用 PRIME offload
+    };
+  };
+
+  # AMDGPU 模块
+  boot.kernelModules = [ "amdgpu" ];
+
+  # 禁用开源nvidia驱动
+  boot.kernelParams = [ "modprobe.blacklist=nouveau" ];	
+  boot.blacklistedKernelModules = [ "nouveau" ];
   # Configure network proxy if necessary
   # networking.proxy.default = "http://user:password@proxy:port/";
   # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";

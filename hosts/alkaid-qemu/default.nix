@@ -8,10 +8,17 @@
 }: {
   imports = [
     ../../modules/system.nix
+    ../../modules/hyprland.nix
 
     # Include the results of the hardware scan.
     ./hardware-configuration.nix
   ];
+
+  environment.variables = {
+    # GDK_SCALE = "1";
+    # GDK_DPI_SCALE = "1.5";
+    # QT_SCALE_FACTOR = "1.5";
+  };
 
   # Bootloader.
   boot.loader = {
@@ -19,14 +26,13 @@
       canTouchEfiVariables = true;
       efiSysMountPoint = "/boot"; # ← use the same mount point here.
     };
-    systemd-boot.enable = true;
-    # grub = {
-    #   enable = true;
-    #   device = "/dev/sda"; #  "nodev"
-    #   efiSupport = false;
-    #   useOSProber = true;
-    #   #efiInstallAsRemovable = true; # in case canTouchEfiVariables doesn't work for your system
-    # };
+    # systemd-boot.enable = true;
+    grub = {
+      enable = true;
+      device = "nodev"; #  
+      efiSupport = true;
+      #efiInstallAsRemovable = true; # in case canTouchEfiVariables doesn't work for your system
+    };
   };
 
   environment.systemPackages = with pkgs; [
@@ -37,7 +43,7 @@
   services.qemuGuest.enable = true;
   services.dbus.enable = true;
 
-  networking.hostName = "alkaid-nixos"; # Define your hostname.
+  networking.hostName = "alkaid-qemu"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
 
   # Configure network proxy if necessary

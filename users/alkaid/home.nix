@@ -3,8 +3,7 @@
     ../../home/core.nix
 
     ../../home/fcitx5
-    
-    ../../home/plasma
+    ../../home/hyprland
     ../../home/programs
     ../../home/shell
   ];
