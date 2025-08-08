@@ -143,9 +143,6 @@
     lm_sensors # for `sensors` command
     fastfetch
     mesa-demos
-    (kdePackages.fcitx5-configtool.override {
-      qtbase = kdePackages.qtbase;
-    })
   ];
 
   boot.kernelPackages = pkgs.linuxPackages_latest;

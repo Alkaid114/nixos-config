@@ -1,19 +1,13 @@
 {pkgs,config, ...}:
 {
   imports = [
-    ../../common/plasma.nix
     # ../../common/secureBoot.nix
   ];
-  services = {
-    xserver = {
-      enable = true;
-    };
-    displayManager = {
-      sddm.enable = true;
-    };
-    desktopManager = {
-      plasma6.enable = true;
-    };
+  
+
+  specialisation = {
+    plasma6.configuration = import ../../common/specialisations/plasma6.nix;
+    hyprland.configuration = import ../../common/specialisations/hyprland;
   };
 
 

@@ -66,6 +66,22 @@
     };
   };
 
+  # 如果设备需要很长时间才能取消挂起（键盘，鼠标等），则禁用
+  powerManagement.powertop.enable = true; 
+  services = { 
+    power-profiles-daemon.enable = false; 
+    tlp = { 
+      enable = true; 
+      settings = { 
+        CPU_BOOST_ON_AC = 1; 
+        CPU_BOOST_ON_BAT = 0; 
+        CPU_SCALING_GOVERNOR_ON_AC = "performance"; 
+        CPU_SCALING_GOVERNOR_ON_BAT = "powersave"; 
+        STOP_CHARGE_THRESH_BAT0 = 95; 
+      }; 
+    }; 
+  };
+
   # systemd.services.sign-nvidia-module = {
   #   description = "Sign NVIDIA kernel module with MOK key";
   #   wantedBy = [ "multi-user.target" ];

@@ -2,6 +2,7 @@
   imports = [
     ./fcitx5.nix
     ./shell
+    ./hyprlandConfig
   ];
 
   programs.git = {
