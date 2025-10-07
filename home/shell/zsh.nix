@@ -1,4 +1,4 @@
-{pkgs,config,username, ...}:
+{pkgs}:
 {
   home.packages = with pkgs;[
     zsh-powerlevel10k
