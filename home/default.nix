@@ -1,4 +1,5 @@
-{...}: {
+{...}: 
+{
   imports = [
     ./fcitx5.nix
     ./shell
@@ -6,6 +7,8 @@
     ./git.nix
     ./terminal.nix
     ./niri
+    ./stylix.nix
+    ./mako.nix
   ];
 
   home.sessionVariables = {

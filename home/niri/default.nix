@@ -3,12 +3,18 @@
   imports = [
     ./wallpaper.nix
     ./swaylock.nix
+    ./waybar.nix
+    ./dms.nix
   ];
+  programs.dankMaterialShell = {
+      enable = true;
+      enableSystemd = true;
+  };
   xdg.configFile = {
     "swaylock".source = ../dotfiles/swaylock;
 
     "niri".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/nixos-config/home/dotfiles/niri";
-    "waybar".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/nixos-config/home/dotfiles/waybar";
+    # "waybar".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/nixos-config/home/dotfiles/waybar";
     "fuzzel".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/nixos-config/home/dotfiles/fuzzel";
   };
 

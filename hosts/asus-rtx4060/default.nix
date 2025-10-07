@@ -64,11 +64,8 @@
       enable = true;
       enableUserService = true;
     };
-  };
 
-  # 如果设备需要很长时间才能取消挂起（键盘，鼠标等），则禁用
-  powerManagement.powertop.enable = true; 
-  services = { 
+    # 如果设备需要很长时间才能取消挂起（键盘，鼠标等），则禁用
     power-profiles-daemon.enable = false; 
     tlp = { 
       enable = true; 

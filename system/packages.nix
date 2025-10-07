@@ -49,5 +49,10 @@
     ethtool
     pciutils # lspci
     usbutils # lsusb
+
+    # audio
+    alsa-utils
+    pavucontrol
+    pamixer
   ];
 }

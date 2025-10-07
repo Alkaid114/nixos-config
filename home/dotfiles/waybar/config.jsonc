@@ -17,7 +17,7 @@
     "network",
     "pulseaudio", 
     "backlight",
-    "battery",
+    "battery"
   ],
 
   "hyprland/workspaces": {
@@ -36,7 +36,7 @@
     "format-icons":{
         "on":"󰂯",
         "off": "󰂲",
-        "connected": "󰂱",
+        "connected": "󰂱"
         },
     "on-click": "blueman-manager",
     "tooltip-format-connected":"{device_enumerate}"
@@ -133,6 +133,6 @@
 	"return-type": "json",
 	"exec": "waybar-module-pomodoro --no-work-icons",
 	"on-click": "waybar-module-pomodoro toggle",
-	"on-click-right": "waybar-module-pomodoro reset",
+	"on-click-right": "waybar-module-pomodoro reset"
   }
 }

@@ -3,17 +3,18 @@
 
   inputs = {
     # nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
-    nixpkgs.url = "https://mirrors.tuna.tsinghua.edu.cn/nix-channels/nixos-25.11/nixexprs.tar.xz";
+    nixpkgs.url = "https://mirrors.tuna.tsinghua.edu.cn/nix-channels/nixos-25.05/nixexprs.tar.xz";
     chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
     niri.url = "github:sodiboo/niri-flake"; 
+    stylix.url = "github:nix-community/stylix/release-25.05";
 
     home-manager = {
-      url = "github:nix-community/home-manager/release-25.11";
+      url = "github:nix-community/home-manager/release-25.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
-  outputs = { self, nixpkgs, home-manager,chaotic,niri , ... }@inputs: 
+  outputs = { self, nixpkgs, home-manager,chaotic,niri ,stylix, ... }@inputs: 
     let
       mkHost = 
         {hostname,username}:
@@ -34,6 +35,7 @@
               ./common/system.nix
 
               niri.nixosModules.niri  
+              stylix.nixosModules.stylix
 
               {  
                 nixpkgs.overlays = [ niri.overlays.niri ];
