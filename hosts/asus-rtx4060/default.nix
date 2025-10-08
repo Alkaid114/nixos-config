@@ -7,7 +7,8 @@
   username,
   STATE_VERSION,
   ...
-}: {
+}:
+{
   imports = [
     # Include the results of the hardware scan.
     ./hardware-configuration.nix
@@ -22,31 +23,33 @@
     # systemd-boot.enable = true;
     grub = {
       enable = true;
-      device = "nodev"; #  "nodev"
+      device = "nodev"; # "nodev"
       efiSupport = true;
-      useOSProber = true;  # 自动检测 Windows
+      useOSProber = true; # 自动检测 Windows
       #efiInstallAsRemovable = true; # in case canTouchEfiVariables doesn't work for your system
     };
   };
 
   #hardware.enableAllFirmware = true;
   networking.hostName = "asus-rtx4060"; # Define your hostname.
-  networking.wireless.enable = false;  # Enables wireless support via wpa_supplicant.
-
+  networking.wireless.enable = false; # Enables wireless support via wpa_supplicant.
 
   # 使用 NVIDIA 和 AMD 驱动
-  services.xserver.videoDrivers = [ "nvidia" "amdgpu" ];
+  services.xserver.videoDrivers = [
+    "nvidia"
+    "amdgpu"
+  ];
 
   # NVIDIA 驱动配置
   hardware.nvidia = {
-    modesetting.enable = true;     # 必须启用，Wayland 依赖
-    open = false;                  # 使用闭源驱动
+    modesetting.enable = true; # 必须启用，Wayland 依赖
+    open = false; # 使用闭源驱动
     nvidiaSettings = true;
     powerManagement.enable = false;
     package = config.boot.kernelPackages.nvidiaPackages.stable;
     prime = {
-      sync.enable = false;         # 禁用 PRIME sync
-      offload.enable = false;      # 禁用 PRIME offload
+      sync.enable = false; # 禁用 PRIME sync
+      offload.enable = false; # 禁用 PRIME offload
     };
   };
 
@@ -54,7 +57,7 @@
   boot.kernelModules = [ "amdgpu" ];
 
   # 禁用开源nvidia驱动
-  boot.kernelParams = [ "modprobe.blacklist=nouveau" ];	
+  boot.kernelParams = [ "modprobe.blacklist=nouveau" ];
   boot.blacklistedKernelModules = [ "nouveau" ];
 
   services.supergfxd.enable = true;
@@ -66,17 +69,17 @@
     };
 
     # 如果设备需要很长时间才能取消挂起（键盘，鼠标等），则禁用
-    power-profiles-daemon.enable = false; 
-    # tlp = { 
-    #   enable = true; 
-    #   settings = { 
-    #     CPU_BOOST_ON_AC = 1; 
-    #     CPU_BOOST_ON_BAT = 0; 
-    #     CPU_SCALING_GOVERNOR_ON_AC = "performance"; 
-    #     CPU_SCALING_GOVERNOR_ON_BAT = "powersave"; 
-    #     STOP_CHARGE_THRESH_BAT0 = 85; 
-    #   }; 
-    # }; 
+    power-profiles-daemon.enable = false;
+    # tlp = {
+    #   enable = true;
+    #   settings = {
+    #     CPU_BOOST_ON_AC = 1;
+    #     CPU_BOOST_ON_BAT = 0;
+    #     CPU_SCALING_GOVERNOR_ON_AC = "performance";
+    #     CPU_SCALING_GOVERNOR_ON_BAT = "powersave";
+    #     STOP_CHARGE_THRESH_BAT0 = 85;
+    #   };
+    # };
   };
 
   # systemd.services.sign-nvidia-module = {
@@ -114,14 +117,11 @@
   #   '';
   # };
 
-
   # systemd.services.supergfxd.path = [ pkgs.pciutils ];
 
-  
   # Configure network proxy if necessary
   # networking.proxy.default = "http://user:password@proxy:port/";
   # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
-
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions

@@ -10,7 +10,13 @@
   boot.kernelPackages =
     let
       linux_g14_pkg =
-        { fetchurl, fetchzip, fetchgit, buildLinux, ... }@args:
+        {
+          fetchurl,
+          fetchzip,
+          fetchgit,
+          buildLinux,
+          ...
+        }@args:
 
         buildLinux (
           args

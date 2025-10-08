@@ -275,9 +275,7 @@ hotkey-overlay {
     // Uncomment this line to disable the "Important Hotkeys" pop-up at startup.
     // skip-at-startup
 }
-
-window-rules {
-  {
+window-rule {
     geometry-corner-radius {
       bottom-left 10.0
       bottom-right 10.0
@@ -286,39 +284,20 @@ window-rules {
     }
     clip-to-geometry true
     draw-border-with-background false
-  }
-  {
-    matches {
-      app-id "yad"
-    }
-    open-floating true
-  }
-  {
-    matches {
-      app-id "firefox"
-      app-id "org.qutebrowser.qutebrowser"
-      app-id "kitty"
-      app-id "evince"
-      app-id "zathura"
-      app-id "Zotero"
-      app-id "RStudio"
-    }
-    default-column-width {
-      proportion 0.95
-    }
-  }
-  {
-    matches {
-      is-focused true
-    }
-    opacity 0.95
-  }
-  {
+}
+
+window-rule {
     matches {
       is-focused false
     }
     opacity 0.85
-  }
+}
+
+window-rule {
+    matches {
+      is-focused true
+    }
+    opacity 0.95
 }
 
 // Uncomment this line to ask the clients to omit their client-side decorations if possible.
@@ -777,14 +756,7 @@ vec4 resize_color(vec3 coords_curr_geo, vec3 size_curr_geo) {
     }
 }
 
-layer-rules {
-  {
-    matches {
-      namespace "swww-daemonbackdrop"
-    }
-    place-within-backdrop true
-  }
-  {
+layer-rule {
     matches {
       namespace "launcher"
     }
@@ -799,7 +771,6 @@ layer-rules {
       softness 10
       color "#000000dd"
     }
-  }
 }
 
 gestures {

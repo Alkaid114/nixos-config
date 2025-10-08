@@ -1,4 +1,4 @@
-{config,lib, ...}:
+{ config, lib, ... }:
 {
   imports = [
     ./wallpaper.nix
@@ -11,7 +11,7 @@
   programs.swaylock.enable = true; # Super+Alt+L in the default setting (screen locker)
   services.polkit-gnome.enable = true; # polkit
   services.swayidle.enable = true; # idle management daemon
-  
+
   # 夜光护眼软件
   services.wlsunset = {
     enable = true;
@@ -19,10 +19,10 @@
     sunrise = "00:00";
     temperature.night = 5700;
   };
-  
+
   programs.dankMaterialShell = {
-      enable = true;
-      enableSystemd = true;
+    enable = true;
+    enableSystemd = true;
   };
   # xdg.configFile = {
   #   # "swaylock".source = ../dotfiles/swaylock;

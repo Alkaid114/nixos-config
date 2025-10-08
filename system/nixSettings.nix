@@ -1,8 +1,12 @@
-{lib,...}:
+{ lib, ... }:
 {
   nix.settings = {
     # enable flakes globally
-    experimental-features = ["nix-command" "flakes" "pipe-operators"];
+    experimental-features = [
+      "nix-command"
+      "flakes"
+      "pipe-operators"
+    ];
 
     substituters = [
       # cache mirror located in China

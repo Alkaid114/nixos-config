@@ -1,4 +1,4 @@
-{pkgs, username,...}:
+{ pkgs, username, ... }:
 {
   users.users.${username} = {
     name = username;
@@ -6,8 +6,12 @@
     shell = pkgs.zsh;
     description = username;
     initialPassword = "114514";
-    extraGroups = ["networkmanager" "wheel" "audio"];
+    extraGroups = [
+      "networkmanager"
+      "wheel"
+      "audio"
+    ];
   };
 
-  nix.settings.trusted-users = [username];
+  nix.settings.trusted-users = [ username ];
 }

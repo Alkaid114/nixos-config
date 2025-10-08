@@ -6,7 +6,7 @@
     enable = true;
     fcitx5 = {
       waylandFrontend = true; # 使用 Wayland
-      addons = 
+      addons =
         # let
         # 为了不使用默认的 rime-data，改用我自定义的小鹤音形数据，这里需要 override
         # 参考 https://github.com/NixOS/nixpkgs/blob/e4246ae1e7f78b7087dce9c9da10d28d3725025f/pkgs/tools/inputmethods/fcitx5/fcitx5-rime.nix
@@ -18,33 +18,33 @@
         #     ];};
         # };
         # in
-        with pkgs; [
+        with pkgs;
+        [
           fcitx5-mozc
-     fcitx5-gtk
-     fcitx5-chinese-addons
-     fcitx5-nord
-            # fcitx5-rime
-            # fcitx5-configtool
-            # fcitx5-lua
-            # kdePackages.fcitx5-configtool
-            # fcitx5-with-plugins	
-            # fcitx5-gtk               # GTK 支持
-            # kdePackages.fcitx5-qt   # Qt 支持（KDE 用户）
-            # fcitx5-chinese-addons
-        ] ++ (with kdePackages;
-          [
-            fcitx5-chinese-addons
-            fcitx5-with-addons
-          ]
-        );
+          fcitx5-gtk
+          fcitx5-chinese-addons
+          fcitx5-nord
+          # fcitx5-rime
+          # fcitx5-configtool
+          # fcitx5-lua
+          # kdePackages.fcitx5-configtool
+          # fcitx5-with-plugins
+          # fcitx5-gtk               # GTK 支持
+          # kdePackages.fcitx5-qt   # Qt 支持（KDE 用户）
+          # fcitx5-chinese-addons
+        ]
+        ++ (with kdePackages; [
+          fcitx5-chinese-addons
+          fcitx5-with-addons
+        ]);
     };
   };
 
   home.sessionVariables = {
-  #  GTK_IM_MODULE = "fcitx";
-  #  QT_IM_MODULE = "fcitx";
-   XMODIFIERS = "@im=fcitx";
-  #  SDL_IM_MODULE="fcitx";
-  #  GLFW_IM_MODULE= lib.mkForce "fcitx";
+    #  GTK_IM_MODULE = "fcitx";
+    #  QT_IM_MODULE = "fcitx";
+    XMODIFIERS = "@im=fcitx";
+    #  SDL_IM_MODULE="fcitx";
+    #  GLFW_IM_MODULE= lib.mkForce "fcitx";
   };
 }

@@ -6,7 +6,8 @@
   pkgs,
   STATE_VERSION,
   ...
-}: {
+}:
+{
   imports = [
     # Include the results of the hardware scan.
     ./hardware-configuration.nix
@@ -21,18 +22,18 @@
     # systemd-boot.enable = true;
     grub = {
       enable = true;
-      device = "nodev"; #  
+      device = "nodev";
       efiSupport = true;
-      useOSProber = true;  # 自动检测 Windows
+      useOSProber = true; # 自动检测 Windows
       #efiInstallAsRemovable = true; # in case canTouchEfiVariables doesn't work for your system
     };
   };
 
   environment.systemPackages = with pkgs; [
-   spice-vdagent
-   xorg.xf86videoqxl
-   mesa
-   libglvnd
+    spice-vdagent
+    xorg.xf86videoqxl
+    mesa
+    libglvnd
   ];
 
   services.xserver.videoDrivers = [ "virtio" ]; # 或 "qxl" 取决于你的视频设备
@@ -50,7 +51,6 @@
   # Configure network proxy if necessary
   # networking.proxy.default = "http://user:password@proxy:port/";
   # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
-
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
