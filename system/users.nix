@@ -1,4 +1,4 @@
-{pkgs, username}:
+{pkgs, username,...}:
 {
   users.users.${username} = {
     name = username;

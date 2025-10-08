@@ -10,7 +10,8 @@
     ./network.nix
     ./nixSettings.nix
     ./users.nix
-    ./proxy.nix
     ./niri
-  ]
+    ./proxy.nix
+    ./envVars.nix
+  ];
 }

@@ -142,37 +142,13 @@ in
   };
   home.file = {
     ".config/waybar/config.jsonc".text =
-      let
-        otherMonitorsConfig =
-          map (
-            name:
-            # json
-            ''
-              {
-                "position": "top",
-                "layer": "top",
-                "output": "${name}",
-                "modules-left": [
-                  "niri/workspaces",
-                  "niri/window"
-                ],
-                "modules-right": [
-                  "tray",
-                  "group/meters"
-                ],
-                ${moduleConfiguration}
-              },
-            '') config.lib.monitors.otherMonitorsNames
-          |> builtins.concatStringsSep "\n";
-      in
       # json
       ''
         [
-          ${otherMonitorsConfig}
           {
             "position": "top",
             "layer": "top",
-            "output": "${config.lib.monitors.mainMonitorName}",
+            "output": "eDP-1",
             "modules-left": [
               "niri/workspaces",
               "tray",
@@ -195,9 +171,11 @@ in
       '';
     ".config/waybar/colors.css".text =
       # css
-      (builtins.mapAttrs (name: value: "@define-color ${name} ${value};") colors)
-      |> builtins.attrValues
-      |> builtins.concatStringsSep "\n";
+      builtins.concatStringsSep "\n" (
+    builtins.attrValues (
+      builtins.mapAttrs (name: value: "@define-color ${name} ${value};") colors
+    )
+  );
     ".config/waybar/tray.css".text =
       # css
       ''

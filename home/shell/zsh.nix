@@ -1,4 +1,4 @@
-{pkgs}:
+{pkgs,...}:
 {
   home.packages = with pkgs;[
     zsh-powerlevel10k
@@ -11,11 +11,23 @@
     enableCompletion = true;
     autosuggestion.enable = true;
     syntaxHighlighting.enable = true;
-    initContent = ''
-    # Powerlevel10k configuration
-    [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+    # initContent = ''
+    # # Powerlevel10k configuration
+    # [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
-    source ${pkgs.zsh-powerlevel10k}/share/zsh-powerlevel10k/powerlevel10k.zsh-theme
-    '';
+    # source ${pkgs.zsh-powerlevel10k}/share/zsh-powerlevel10k/powerlevel10k.zsh-theme
+    # '';
+    plugins = [
+      # {
+      #   name = "powerlevel10k-config";
+      #   src = ../../dotfiles;
+      #   file = "p10k.zsh";
+      # }
+      {
+        name = "zsh-powerlevel10k";
+        src = "${pkgs.zsh-powerlevel10k}/share/zsh-powerlevel10k/";
+        file = "powerlevel10k.zsh-theme";
+      }
+    ];
   };
 }

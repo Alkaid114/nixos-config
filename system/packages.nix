@@ -1,4 +1,4 @@
-{pkgs}:
+{pkgs,...}:
 {
   environment.systemPackages = with pkgs; [
     google-chrome
@@ -40,7 +40,6 @@
 
     # system call monitoring
     strace # system call monitoring
-    ltrace # library call monitoring
     lsof # list open files
 
     # system tools
@@ -53,6 +52,8 @@
     # audio
     alsa-utils
     pavucontrol
-    pamixer
+
+    nixd
+    nixfmt-rfc-style
   ];
 }

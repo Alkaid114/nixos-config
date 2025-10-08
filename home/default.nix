@@ -8,7 +8,6 @@
     ./terminal.nix
     ./niri
     ./stylix.nix
-    ./mako.nix
   ];
 
   home.sessionVariables = {

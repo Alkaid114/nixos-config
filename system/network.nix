@@ -1,4 +1,4 @@
-{}:
+{...}:
 {
   # Enable networking
   networking.networkmanager.enable = true;
@@ -18,4 +18,21 @@
     };
     openFirewall = true;
   };
+
+  # networking.networkmanager.connectionProfiles = [
+  #   {
+  #     connection.id = "static-wlp4s0";
+  #     connection.type = "ethernet";
+  #     connection.interface-name = "wlp4s0";
+  #     ipv4.addresses = [
+  #       {
+  #         address = "192.168.1.16";
+  #         prefixLength = 24;
+  #       }
+  #     ];
+  #     ipv4.gateway = "192.168.124.2";
+  #     ipv4.dns = ["223.5.5.5"];
+  #     ipv4.method = "manual";
+  #   }
+  # ];
 }

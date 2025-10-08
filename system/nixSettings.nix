@@ -1,13 +1,14 @@
-{}:
+{lib,...}:
 {
   nix.settings = {
     # enable flakes globally
-    experimental-features = ["nix-command" "flakes"];
+    experimental-features = ["nix-command" "flakes" "pipe-operators"];
 
     substituters = [
       # cache mirror located in China
       # status: https://mirror.sjtu.edu.cn/
       "https://mirror.sjtu.edu.cn/nix-channels/store"
+      # "https://nyx.chaotic.cx"
       # status: https://mirrors.ustc.edu.cn/status/
       # "https://mirrors.ustc.edu.cn/nix-channels/store"
     ];
@@ -24,4 +25,5 @@
     dates = lib.mkDefault "weekly";
     options = lib.mkDefault "--delete-older-than 7d";
   };
+
 }

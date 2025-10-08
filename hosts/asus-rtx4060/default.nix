@@ -29,9 +29,9 @@
     };
   };
 
-  hardware.enableAllFirmware = true;
+  #hardware.enableAllFirmware = true;
   networking.hostName = "asus-rtx4060"; # Define your hostname.
-  networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
+  networking.wireless.enable = false;  # Enables wireless support via wpa_supplicant.
 
 
   # 使用 NVIDIA 和 AMD 驱动
@@ -67,16 +67,16 @@
 
     # 如果设备需要很长时间才能取消挂起（键盘，鼠标等），则禁用
     power-profiles-daemon.enable = false; 
-    tlp = { 
-      enable = true; 
-      settings = { 
-        CPU_BOOST_ON_AC = 1; 
-        CPU_BOOST_ON_BAT = 0; 
-        CPU_SCALING_GOVERNOR_ON_AC = "performance"; 
-        CPU_SCALING_GOVERNOR_ON_BAT = "powersave"; 
-        STOP_CHARGE_THRESH_BAT0 = 85; 
-      }; 
-    }; 
+    # tlp = { 
+    #   enable = true; 
+    #   settings = { 
+    #     CPU_BOOST_ON_AC = 1; 
+    #     CPU_BOOST_ON_BAT = 0; 
+    #     CPU_SCALING_GOVERNOR_ON_AC = "performance"; 
+    #     CPU_SCALING_GOVERNOR_ON_BAT = "powersave"; 
+    #     STOP_CHARGE_THRESH_BAT0 = 85; 
+    #   }; 
+    # }; 
   };
 
   # systemd.services.sign-nvidia-module = {

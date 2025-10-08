@@ -3,23 +3,36 @@
 
   inputs = {
     # nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
-    nixpkgs.url = "https://mirrors.tuna.tsinghua.edu.cn/nix-channels/nixos-25.05/nixexprs.tar.xz";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
     niri.url = "github:sodiboo/niri-flake"; 
-    stylix.url = "github:nix-community/stylix/release-25.05";
+    stylix.url = "github:nix-community/stylix";
+    dankMaterialShell = {
+      url = "github:AvengeMedia/DankMaterialShell";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     home-manager = {
-      url = "github:nix-community/home-manager/release-25.05";
+      url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    quickshell = {
+      # add ?ref=<tag> to track a tag
+      url = "git+https://git.outfoxxed.me/outfoxxed/quickshell";
+
+      # THIS IS IMPORTANT
+      # Mismatched system dependencies will lead to crashes and other issues.
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
-  outputs = { self, nixpkgs, home-manager,chaotic,niri ,stylix, ... }@inputs: 
+  outputs = { self, nixpkgs, home-manager,chaotic,niri ,stylix,dankMaterialShell,quickshell, ... }@inputs: 
     let
       mkHost = 
         {hostname,username}:
         let
-          STATE_VERSION = 25.05;
+          STATE_VERSION = "25.05";
         in
           nixpkgs.lib.nixosSystem {
             system = "x86_64-linux";
@@ -32,13 +45,19 @@
             modules = [
               ./hosts/${hostname}
               ./system
-              ./common/system.nix
 
               niri.nixosModules.niri  
               stylix.nixosModules.stylix
 
               {  
-                nixpkgs.overlays = [ niri.overlays.niri ];
+                nixpkgs.overlays = [ 
+                #niri.overlays.niri 
+                (final: prev: {
+    niri = (niri.overlays.niri final prev).niri.overrideAttrs (old: {
+      doCheck = false;
+    });
+  })
+		    ];
               }  
 
               home-manager.nixosModules.home-manager
@@ -53,7 +72,12 @@
                     stateVersion = STATE_VERSION;
                   };
 
-                  imports = [ ./home ];
+                  imports = [ 
+                    ./home
+                    stylix.homeModules.stylix
+                    dankMaterialShell.homeModules.dankMaterialShell.default
+		    dankMaterialShell.homeModules.dankMaterialShell.niri
+                  ];
                 };
                 home-manager.extraSpecialArgs = {
                   # inherit (inputs) plasma-manager;
