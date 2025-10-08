@@ -24,6 +24,8 @@
           fcitx5-gtk
           fcitx5-chinese-addons
           fcitx5-nord
+          fcitx5-rime
+          fcitx5-table-extra
           # fcitx5-rime
           # fcitx5-configtool
           # fcitx5-lua
@@ -36,15 +38,34 @@
         ++ (with kdePackages; [
           fcitx5-chinese-addons
           fcitx5-with-addons
+          fcitx5-qt
+          fcitx5-configtool
         ]);
+      settings = {
+        addons = {
+
+        };
+        #globalOptions = { "Hotkey/TriggerKeys" = { "0" = "Alt+space"; }; };
+        inputMethod = {
+          "Groups/0" = {
+            Name = "Default";
+            "Default Layout" = "us";
+            DefaultIM = "keyboard-us";
+          };
+          "Groups/0/Items/0".Name = "keyboard-us";
+          "Groups/0/Items/1".Name = "shuangpin";
+          GroupOrder."0" = "Default";
+        };
+      };
+
     };
   };
 
-  home.sessionVariables = {
-    #  GTK_IM_MODULE = "fcitx";
-    #  QT_IM_MODULE = "fcitx";
-    XMODIFIERS = "@im=fcitx";
-    #  SDL_IM_MODULE="fcitx";
-    #  GLFW_IM_MODULE= lib.mkForce "fcitx";
-  };
+  # environment.sessionVariables = {
+  #   #  GTK_IM_MODULE = "fcitx";
+  #   #  QT_IM_MODULE = "fcitx";
+  #   XMODIFIERS = "@im=fcitx";
+  #   #  SDL_IM_MODULE="fcitx";
+  #   #  GLFW_IM_MODULE= lib.mkForce "fcitx";
+  # };
 }

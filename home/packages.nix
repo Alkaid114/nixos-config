@@ -6,5 +6,6 @@
         "--wayland-text-input-version=3"
       ];
     })
+    gnome-themes-extra
   ];
 }

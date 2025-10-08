@@ -11,6 +11,7 @@
     enableCompletion = true;
     autosuggestion.enable = true;
     syntaxHighlighting.enable = true;
+    initExtra = "source ~/.p10k.zsh";
     # initContent = ''
     # # Powerlevel10k configuration
     # [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
@@ -20,7 +21,7 @@
     plugins = [
       # {
       #   name = "powerlevel10k-config";
-      #   src = ../../dotfiles;
+      #   src = ../dotfiles/.p10k.zsh;
       #   file = "p10k.zsh";
       # }
       {
