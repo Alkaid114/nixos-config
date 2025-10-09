@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs,config, ... }:
 {
   imports = [
     ./dm.nix
@@ -10,9 +10,6 @@
   security.pam.services.swaylock = { };
 
   # programs.alacritty.enable = true; # Super+T in the default setting (terminal)
-
-  #programs.waybar.enable = true; # launch on startup in the default setting (bar)
-
   environment.systemPackages =
     with pkgs;
     [
@@ -27,6 +24,8 @@
       nautilus
       gnome.gvfs
       adwaita-icon-theme
+      gnome-themes-extra
+
     ]
     ++ (with kdePackages; [
       dolphin
@@ -46,5 +45,5 @@
   services.gvfs.enable = true;
 
   # 压缩解压
-  programs.file-roller.enable = true;
+  programs.file-roller.enable = true;  
 }

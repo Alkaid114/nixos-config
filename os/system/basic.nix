@@ -1,4 +1,4 @@
-{ ... }:
+{ pkgs, ... }:
 {
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
@@ -56,6 +56,21 @@
       #media-session.enable = true;
     };
   };
+
+  environment.systemPackages = with pkgs; [
+    btrfs-progs # Btrfs 命令行工具，如 btrfs subvolume/snapshot
+    snapper # 快照管理工具
+    btrfs-assistant # 图形化快照管理工具（如可用）
+    mesa-demos
+    # system tools
+    sysstat
+    ethtool
+    pciutils # lspci
+    usbutils # lsusb
+    # audio
+    alsa-utils
+    pavucontrol
+  ];
 
   hardware.bluetooth.enable = true;
 }

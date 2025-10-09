@@ -55,7 +55,7 @@
           };
           modules = [
             ./hosts/${hostname}
-            ./system
+            ./os
 
             niri.nixosModules.niri
             stylix.nixosModules.stylix
@@ -73,10 +73,11 @@
 
             home-manager.nixosModules.home-manager
             {
-              home-manager.useGlobalPkgs = true;
+              # home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
 
               home-manager.users.${username} = {
+                nixpkgs.config.allowUnfree = true;
                 home = {
                   inherit username;
                   homeDirectory = "/home/${username}";

@@ -11,7 +11,7 @@
     enableCompletion = true;
     autosuggestion.enable = true;
     syntaxHighlighting.enable = true;
-    initExtra = "source ~/.p10k.zsh";
+    initContent = "[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh";
     # initContent = ''
     # # Powerlevel10k configuration
     # [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh

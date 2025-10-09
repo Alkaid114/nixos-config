@@ -20,6 +20,7 @@
     temperature.night = 5700;
   };
 
+    # "ni
   programs.dankMaterialShell = {
     enable = true;
     enableSystemd = true;
@@ -32,6 +33,9 @@
   #   "fuzzel".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/nixos-config/home/dotfiles/fuzzel";
   # };
   xdg.configFile = {
+    # "niri".source =
+    #   config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/nix-config/home/dotfiles/niri";
+
     "niri".source = ../dotfiles/niri;
     "fuzzel".source = ../dotfiles/fuzzel;
   };
