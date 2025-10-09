@@ -7,6 +7,11 @@
     chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
     niri.url = "github:sodiboo/niri-flake";
     stylix.url = "github:nix-community/stylix";
+    flake-parts.url = "github:hercules-ci/flake-parts";
+    nix-ros-overlay = {
+      url = "github:lopsided98/nix-ros-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     dankMaterialShell = {
       url = "github:AvengeMedia/DankMaterialShell";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -18,11 +23,7 @@
     };
 
     quickshell = {
-      # add ?ref=<tag> to track a tag
       url = "git+https://git.outfoxxed.me/outfoxxed/quickshell";
-
-      # THIS IS IMPORTANT
-      # Mismatched system dependencies will lead to crashes and other issues.
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -30,90 +31,114 @@
   outputs =
     {
       self,
+      flake-parts,
       nixpkgs,
       home-manager,
-      chaotic,
-      niri,
       stylix,
-      dankMaterialShell,
+      chaotic,
       quickshell,
+      dankMaterialShell,
+      nix-ros-overlay,
+      niri,
       ...
     }@inputs:
-    let
-      mkHost =
-        { hostname, username }:
+
+    flake-parts.lib.mkFlake { inherit inputs; } {
+      systems = [ "x86_64-linux" ];
+
+      flake =
+        {
+          inputs,
+          ...
+        }:
         let
-          STATE_VERSION = "25.05";
+          stateVersion = "25.05";
+          username = "alkaid";
         in
-        nixpkgs.lib.nixosSystem {
-          system = "x86_64-linux";
-          specialArgs = {
-            inputs = inputs;
-            hostname = hostname;
-            username = username;
-            STATE_VERSION = STATE_VERSION;
-          };
-          modules = [
-            ./hosts/${hostname}
-            ./os
+        {
+          description = "Alkaid's NixOS flake";
 
-            niri.nixosModules.niri
-            stylix.nixosModules.stylix
-
-            {
-              nixpkgs.overlays = [
-                #niri.overlays.niri
-                (final: prev: {
-                  niri = (niri.overlays.niri final prev).niri.overrideAttrs (old: {
-                    doCheck = false;
-                  });
-                })
-              ];
-            }
-
-            home-manager.nixosModules.home-manager
-            {
-              # home-manager.useGlobalPkgs = true;
-              home-manager.useUserPackages = true;
-
-              home-manager.users.${username} = {
-                nixpkgs.config.allowUnfree = true;
-                home = {
-                  inherit username;
-                  homeDirectory = "/home/${username}";
-                  stateVersion = STATE_VERSION;
-                };
-
-                imports = [
-                  ./home
-                  stylix.homeModules.stylix
-                  dankMaterialShell.homeModules.dankMaterialShell.default
-                  dankMaterialShell.homeModules.dankMaterialShell.niri
-                ];
-              };
-              home-manager.extraSpecialArgs = {
-                # inherit (inputs) plasma-manager;
+          nixosConfigurations = {
+            asus-rtx4060 = nixpkgs.lib.nixosSystem {
+              specialArgs = {
                 inherit username;
-                inherit hostname;
+                inherit stateVersion;
+                # inherit inputs;
               };
-            }
+              modules = [
+                ./hosts/asus-rtx4060/driver.nix
+                ./os
 
-            chaotic.nixosModules.nyx-cache
-            chaotic.nixosModules.nyx-overlay
-            chaotic.nixosModules.nyx-registry
-          ];
+                home-manager.nixosModules.home-manager
+                {
+                  home-manager.extraSpecialArgs = {
+                    inherit stateVersion;
+                    inherit username;
+                  };
+                  home-manager.useUserPackages = true;
+                  home-manager.users.${username} = {
+                    nixpkgs.config.allowUnfree = true;
+                    home = {
+                      username = username;
+                      homeDirectory = "/home/${username}";
+                      stateVersion = stateVersion;
+                    };
+                    imports = [
+                      ./home
+                      stylix.homeModules.stylix
+                      dankMaterialShell.homeModules.dankMaterialShell.default
+                      dankMaterialShell.homeModules.dankMaterialShell.niri
+                    ];
+                  };
+                }
+
+                {
+                  nixpkgs.overlays = [
+                    niri.overlays.niri
+                    nix-ros-overlay.overlays.default
+                  ];
+                }
+
+                niri.nixosModules.niri
+                stylix.nixosModules.stylix
+                chaotic.nixosModules.nyx-cache
+                chaotic.nixosModules.nyx-overlay
+                chaotic.nixosModules.nyx-registry
+              ];
+            };
+          };
         };
-    in
-    {
-      nixosConfigurations = {
-        alkaid-qemu = mkHost {
-          hostname = "alkaid-qemu";
-          username = "alkaid";
+
+      perSystem =
+        {
+          pkgs,
+          ...
+        }:
+        {
+          devShells = {
+            # default = pkgs.mkShell {
+            #   packages = with pkgs; [
+            #     git
+            #     gcc
+            #   ];
+            # };
+
+            ros = pkgs.mkShell {
+              packages = [
+                pkgs.colcon
+                # ... other non-ROS packages
+                (
+                  with pkgs.rosPackages.humble;
+                  buildEnv {
+                    paths = [
+                      ros-core
+                      # ... other ROS packages
+                    ];
+                  }
+                )
+              ];
+            };
+          };
         };
-        asus-rtx4060 = mkHost {
-          hostname = "asus-rtx4060";
-          username = "alkaid";
-        };
-      };
     };
 }

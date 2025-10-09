@@ -1,9 +1,6 @@
 # copied from https://github.com/nix-community/stylix/pull/1932
 {
-  inputs,
   config,
-  lib,
-  pkgs,
   username,
   ...
 }:

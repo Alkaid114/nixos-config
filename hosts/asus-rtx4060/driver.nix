@@ -3,9 +3,7 @@
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 {
   config,
-  pkgs,
-  username,
-  STATE_VERSION,
+  stateVersion,
   ...
 }:
 {
@@ -127,5 +125,5 @@
   # this value at the release version of the first install of this system.
   # Before changing this value read the documentation for this option
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
-  system.stateVersion = STATE_VERSION; # Did you read the comment?
+  system.stateVersion = stateVersion; # Did you read the comment?
 }
