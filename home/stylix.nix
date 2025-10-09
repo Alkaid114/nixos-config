@@ -3,7 +3,6 @@
   stylix.enable = true;
   stylix.autoEnable = true;
 
-
   # 可选：设置壁纸和主题
   stylix.image = ./niri/wallpaper.png;
   stylix.polarity = "dark";

@@ -1,4 +1,4 @@
-{ pkgs,config, ... }:
+{ pkgs, config, ... }:
 {
   imports = [
     ./dm.nix
@@ -45,5 +45,5 @@
   services.gvfs.enable = true;
 
   # 压缩解压
-  programs.file-roller.enable = true;  
+  programs.file-roller.enable = true;
 }

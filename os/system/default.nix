@@ -1,4 +1,4 @@
-{...}:
+{ ... }:
 {
   imports = [
     ./envVars.nix

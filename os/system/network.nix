@@ -8,12 +8,15 @@
   # Or disable the firewall altogether.
   networking.firewall = {
     enable = true;
-    trustedInterfaces = [ 
-    "Meta"
-  ];
-    allowedTCPPorts = [ 7897 ]; # Clash 
-    allowedUDPPorts = [ 7897 ];
+    trustedInterfaces = [
+      "Meta"
+    ];
+    allowedTCPPorts = [ 7897 7890 7891 7893 7894 ]; # Clash
+    allowedUDPPorts = [ 7897 7890 7891 7893 7894];
   };
+
+  networking.firewall.checkReversePath = false;
+
 
   # Enable the OpenSSH daemon.
   services.openssh = {
