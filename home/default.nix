@@ -5,7 +5,7 @@
     ./shell
     ./terminal.nix
     ./niri
-    ./stylix.nix
+    ./stylix
     ./coding
     ./social.nix
     ./commonTools.nix

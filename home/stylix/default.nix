@@ -4,8 +4,15 @@
   stylix.autoEnable = true;
 
   # 可选：设置壁纸和主题
-  stylix.image = ./niri/wallpaper.png;
+  # stylix.image = ../niri/wallpaper.png;
   stylix.polarity = "dark";
+  # stylix.base16Scheme = import ./matugen2stylix.nix {
+  #   jsonPath = ./matugen.json;
+  # };
+  stylix.base16Scheme = import ./yaml2stylix.nix {
+    yamlPath = ./mocha.yaml;
+    inherit pkgs;
+  };
 
   stylix.fonts = {
     serif = {
