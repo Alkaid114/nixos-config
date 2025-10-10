@@ -34,8 +34,8 @@
 
   # 使用 NVIDIA 和 AMD 驱动
   services.xserver.videoDrivers = [
-    "nvidia"
     "amdgpu"
+    "nvidia"
   ];
 
   # NVIDIA 驱动配置
@@ -43,13 +43,15 @@
     modesetting.enable = true; # 必须启用，Wayland 依赖
     open = false; # 使用闭源驱动
     nvidiaSettings = true;
-    powerManagement.enable = false;
+    powerManagement.enable = true;
     package = config.boot.kernelPackages.nvidiaPackages.stable;
     prime = {
       sync.enable = false; # 禁用 PRIME sync
       offload.enable = false; # 禁用 PRIME offload
     };
   };
+
+  powerManagement.cpufreq.max = 3800000;
 
   # AMDGPU 模块
   boot.kernelModules = [ "amdgpu" ];
