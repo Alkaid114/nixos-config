@@ -7,18 +7,19 @@
   time.timeZone = "Asia/Shanghai";
 
   # Select internationalisation properties.
-  i18n.defaultLocale = "en_US.UTF-8";
+  i18n.defaultLocale = "zh_CN.UTF-8";
 
   i18n.extraLocaleSettings = {
+    LC_MESSAGES = "en_US.UTF-8"; # 错误提示、命令行输出用英文
+    LC_TIME = "zh_CN.UTF-8"; # 时间格式用中文
+    LC_NUMERIC = "zh_CN.UTF-8"; # 数字格式用中文
+    LC_MONETARY = "zh_CN.UTF-8"; # 货币格式用中文
+    LC_PAPER = "zh_CN.UTF-8"; # 纸张尺寸用中文
+    LC_NAME = "zh_CN.UTF-8";
     LC_ADDRESS = "zh_CN.UTF-8";
+    LC_TELEPHONE = "zh_CN.UTF-8";
     LC_IDENTIFICATION = "zh_CN.UTF-8";
     LC_MEASUREMENT = "zh_CN.UTF-8";
-    LC_MONETARY = "zh_CN.UTF-8";
-    LC_NAME = "zh_CN.UTF-8";
-    LC_NUMERIC = "zh_CN.UTF-8";
-    LC_PAPER = "zh_CN.UTF-8";
-    LC_TELEPHONE = "zh_CN.UTF-8";
-    LC_TIME = "zh_CN.UTF-8";
   };
 
   # Enable CUPS to print documents.
