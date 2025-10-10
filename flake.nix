@@ -95,7 +95,6 @@
                 {
                   nixpkgs.overlays = [
                     niri.overlays.niri
-                    nix-ros-overlay.overlays.default
                   ];
                 }
 
@@ -123,22 +122,37 @@
             #   ];
             # };
 
-            ros = pkgs.mkShell {
-              packages = [
-                pkgs.colcon
-                # ... other non-ROS packages
-                (
-                  with pkgs.rosPackages.humble;
-                  buildEnv {
-                    paths = [
-                      ros-core
-                      # ... other ROS packages
-                    ];
-                  }
-                )
-              ];
-            };
+            ros =
+              let
+                pkgs = import nixpkgs {
+                  system = "x86_64-linux";
+                  overlays = [
+                    nix-ros-overlay.overlays.default
+                  ];
+                };
+              in
+              pkgs.mkShell {
+                packages = [
+                  pkgs.colcon
+                  pkgs.cmake
+                  pkgs.git
+                  # ... other non-ROS packages
+                  (
+                    with pkgs.rosPackages.humble;
+                    buildEnv {
+                      paths = [
+                        ros-core
+                        # ... other ROS packages
+                      ];
+                    }
+                  )
+                ];
+              };
           };
         };
     };
+  nixConfig = {
+    extra-substituters = [ "https://ros.cachix.org" ];
+    extra-trusted-public-keys = [ "ros.cachix.org-1:dSyZxI8geDCJrwgvCOHDoAfOm5sV1wCPjBkKL+38Rvo=" ];
+  };
 }

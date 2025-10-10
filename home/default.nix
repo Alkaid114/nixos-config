@@ -7,6 +7,8 @@
     ./niri
     ./stylix.nix
     ./coding
+    ./social.nix
+    ./commonTools.nix
   ];
 
   home.sessionVariables = {
