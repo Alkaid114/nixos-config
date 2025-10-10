@@ -4,6 +4,8 @@
 {
   config,
   stateVersion,
+  inputs,
+  pkgs,
   ...
 }:
 {
@@ -24,6 +26,7 @@
       device = "nodev"; # "nodev"
       efiSupport = true;
       useOSProber = true; # 自动检测 Windows
+      theme = inputs.nixos-grub-themes.packages.${pkgs.system}.nixos;
       #efiInstallAsRemovable = true; # in case canTouchEfiVariables doesn't work for your system
     };
   };

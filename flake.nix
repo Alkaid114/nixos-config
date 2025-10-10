@@ -26,6 +26,8 @@
       url = "git+https://git.outfoxxed.me/outfoxxed/quickshell";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    nixos-grub-themes.url = "github:jeslie0/nixos-grub-themes";
   };
 
   outputs =
@@ -40,6 +42,7 @@
       dankMaterialShell,
       nix-ros-overlay,
       niri,
+      nixos-grub-themes,
       ...
     }@inputs:
 
@@ -48,7 +51,7 @@
 
       flake =
         {
-          inputs,
+          # inputs,
           ...
         }:
         let
@@ -63,7 +66,7 @@
               specialArgs = {
                 inherit username;
                 inherit stateVersion;
-                # inherit inputs;
+                inherit inputs;
               };
               modules = [
                 ./hosts/asus-rtx4060/driver.nix
