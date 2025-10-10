@@ -29,6 +29,7 @@
     ]
     ++ (with kdePackages; [
       dolphin
+      breeze-icons 
     ]);
 
   # programs.thunar = {

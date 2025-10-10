@@ -267,6 +267,8 @@ environment {
 
 // This line starts waybar, a commonly used bar for Wayland compositors.
 spawn-at-startup "rog-control-center"
+spawn-at-startup "swww-daemon"
+
 
 // To run a shell command (with variables, pipes, etc.), use spawn-sh-at-startup:
 // spawn-sh-at-startup "qs -c ~/source/qs/MyAwesomeShell"
@@ -558,6 +560,13 @@ window-rule {
     open-floating true
 }
 
+window-rule {
+    match title="图片查看器" app-id="QQ"
+    match 
+
+    open-floating true
+}
+
 // Example: block out two password managers from screen capture.
 // (This example rule is commented out with a "/-" in front.)
 /-window-rule {
@@ -830,8 +839,10 @@ binds {
     // Mod+Shift+Space { switch-layout "prev"; }
 
     Print { screenshot; }
+    Shift+Mod+S { screenshot }
     Ctrl+Print { screenshot-screen; }
     Alt+Print { screenshot-window; }
+    XF86TouchpadToggle {  }
 
     // Applications such as remote-desktop clients and software KVM switches may
     // request that niri stops processing the keyboard shortcuts defined here
@@ -850,4 +861,8 @@ binds {
     // Powers off the monitors. To turn them back on, do any input like
     // moving the mouse or pressing any other key.
     Mod+Shift+P { power-off-monitors; }
+}
+
+overview {
+    backdrop-color "#8caaee"
 }
