@@ -121,6 +121,28 @@
             #     gcc
             #   ];
             # };
+            cpp = pkgs.mkShell {
+              name = "cpp";
+              shell = pkgs.zsh;
+
+              buildInputs = with pkgs; [
+                cmake
+                gnumake
+                gcc
+                clang
+                clang-tools # includes clangd
+                eigen
+                pcl
+                opencv
+              ];
+
+              shellHook = ''
+                exec zsh
+                [ -f ~/.zshrc ] && source ~/.zshrc
+                echo "Welcome to the C++ devshell!"
+                echo "Tools available: cmake, gcc, clang, clangd, eigen, pcl, opencv"
+              '';
+            };
 
             ros =
               let

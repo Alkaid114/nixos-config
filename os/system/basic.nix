@@ -71,6 +71,7 @@
     # audio
     alsa-utils
     pavucontrol
+    libinput
   ];
 
   hardware.bluetooth.enable = true;
