@@ -83,6 +83,12 @@
     };
   };
 
+  zramSwap.enable = {
+    enable = true;
+    algorithm = "zstd";
+    memoryPercent = 50;
+  };
+
   # systemd.services.sign-nvidia-module = {
   #   description = "Sign NVIDIA kernel module with MOK key";
   #   wantedBy = [ "multi-user.target" ];
