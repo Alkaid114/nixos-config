@@ -83,11 +83,18 @@
     };
   };
 
+  services.upower.enable = true;
+  services.acpid.enable = true;
+
   zramSwap = {
     enable = true;
     algorithm = "zstd";
     memoryPercent = 50;
   };
+
+  environment.systemPackages = with pkgs; [
+    acpi
+  ];
 
   # systemd.services.sign-nvidia-module = {
   #   description = "Sign NVIDIA kernel module with MOK key";
