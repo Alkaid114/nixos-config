@@ -8,10 +8,6 @@
     niri.url = "github:sodiboo/niri-flake";
     stylix.url = "github:nix-community/stylix";
     flake-parts.url = "github:hercules-ci/flake-parts";
-    nix-ros-overlay = {
-      url = "github:lopsided98/nix-ros-overlay";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     dankMaterialShell = {
       url = "github:AvengeMedia/DankMaterialShell";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -117,80 +113,8 @@
           ...
         }:
         {
-          devShells = {
-            # default = pkgs.mkShell {
-            #   packages = with pkgs; [
-            #     git
-            #     gcc
-            #   ];
-            # };
-            cpp = pkgs.mkShell {
-              name = "cpp";
-              shell = pkgs.zsh;
-
-              buildInputs = with pkgs; [
-                cmake
-                gnumake
-                gcc
-                clang
-                clang-tools # includes clangd
-                eigen
-                pcl
-                opencv
-              ];
-
-              shellHook = ''
-                exec zsh
-                [ -f ~/.zshrc ] && source ~/.zshrc
-                echo "Welcome to the C++ devshell!"
-                echo "Tools available: cmake, gcc, make, clang, clangd, eigen, pcl, opencv"
-              '';
-            };
-
-            zig = pkgs.mkShell {
-              name = "zig";
-              shell = pkgs.zsh;
-
-              buildInputs = with pkgs; [
-                zig
-                zls
-              ];
-
-              shellHook = ''
-                exec zsh
-                [ -f ~/.zshrc ] && source ~/.zshrc
-                echo "Welcome to the Zig devshell!"
-                echo "Tools available: zig"
-              '';
-            };
-
-            ros =
-              let
-                pkgs = import nixpkgs {
-                  system = "x86_64-linux";
-                  overlays = [
-                    nix-ros-overlay.overlays.default
-                  ];
-                };
-              in
-              pkgs.mkShell {
-                packages = [
-                  pkgs.colcon
-                  pkgs.cmake
-                  pkgs.git
-                  # ... other non-ROS packages
-                  (
-                    with pkgs.rosPackages.humble;
-                    buildEnv {
-                      paths = [
-                        ros-core
-                        # ... other ROS packages
-                      ];
-                    }
-                  )
-                ];
-              };
-          };
+          # devShells = {
+          # };
         };
     };
   nixConfig = {
