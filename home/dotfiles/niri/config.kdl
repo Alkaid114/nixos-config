@@ -120,6 +120,7 @@ output "eDP-1" {
 layout {
     // Set gaps around windows in logical pixels.
     gaps 12
+    background-color "#babbf1"
 
     // When to center a column when changing focus, options are:
     // - "never", default behavior, focusing an off-screen column will keep at the left
@@ -562,7 +563,6 @@ window-rule {
 
 window-rule {
     match title="图片查看器" app-id="QQ"
-    match 
 
     open-floating true
 }
@@ -839,10 +839,10 @@ binds {
     // Mod+Shift+Space { switch-layout "prev"; }
 
     Print { screenshot; }
-    Shift+Mod+S { screenshot }
+    Shift+Mod+S { screenshot; }
     Ctrl+Print { screenshot-screen; }
     Alt+Print { screenshot-window; }
-    XF86TouchpadToggle {  }
+    // XF86TouchpadToggle {  }
 
     // Applications such as remote-desktop clients and software KVM switches may
     // request that niri stops processing the keyboard shortcuts defined here

@@ -72,6 +72,8 @@
     alsa-utils
     pavucontrol
     libinput
+    # bluetooth
+    blueman
   ];
 
   hardware.bluetooth.enable = true;

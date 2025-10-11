@@ -2,6 +2,7 @@
 {
   config,
   username,
+  pkgs,
   ...
 }:
 let
@@ -52,6 +53,9 @@ let
   };
 in
 {
+  home.packages = with pkgs; [
+    matugen
+  ];
   # programs.quickshell.configs.dms =
   #   let
   #     dankMaterialShell =

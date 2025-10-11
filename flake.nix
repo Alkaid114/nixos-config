@@ -143,7 +143,24 @@
                 exec zsh
                 [ -f ~/.zshrc ] && source ~/.zshrc
                 echo "Welcome to the C++ devshell!"
-                echo "Tools available: cmake, gcc, clang, clangd, eigen, pcl, opencv"
+                echo "Tools available: cmake, gcc, make, clang, clangd, eigen, pcl, opencv"
+              '';
+            };
+
+            zig = pkgs.mkShell {
+              name = "zig";
+              shell = pkgs.zsh;
+
+              buildInputs = with pkgs; [
+                zig
+                zls
+              ];
+
+              shellHook = ''
+                exec zsh
+                [ -f ~/.zshrc ] && source ~/.zshrc
+                echo "Welcome to the Zig devshell!"
+                echo "Tools available: zig"
               '';
             };
 
