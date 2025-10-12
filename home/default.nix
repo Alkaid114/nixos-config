@@ -16,4 +16,9 @@
     BROWSER = "google-chrome";
     TERMINAL = "wezterm";
   };
+
+  xdg.userDirs = {
+    enable = true;
+    createDirectories = true;
+  };
 }
