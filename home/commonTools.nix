@@ -5,10 +5,12 @@
     [
       libreoffice
       vlc
+      gparted
     ]
     ++ (with kdePackages; [
       kate
       okular
       gwenview
+      filelight
     ]);
 }

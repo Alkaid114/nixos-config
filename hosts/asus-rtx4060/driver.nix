@@ -52,6 +52,20 @@
       sync.enable = false; # 禁用 PRIME sync
       offload.enable = false; # 禁用 PRIME offload
     };
+    videoAcceleration = true; # 启用视频硬件加速
+    dynamicBoost.enable = true; # 启用 Dynamic Boost
+  };
+
+  hardware.amdgpu = {
+    initrd = {
+      enable = true;
+    };
+    opencl.enable = true;
+  };
+
+  hardware.graphics = {
+    enable = true;
+    enable32Bit = true;
   };
 
   powerManagement.cpufreq.max = 3800000;
@@ -94,7 +108,17 @@
 
   environment.systemPackages = with pkgs; [
     acpi
+    libva
+    libva-utils
+    mesa
+    vaapiVdpau
+    vdpauinfo
   ];
+
+  environment.sessionVariables = {
+    LIBVA_DRIVER_NAME = "radeonsi";  # AMD VA-API 驱动
+    VDPAU_DRIVER = "radeonsi";       # 可选，某些播放器用 VDPAU
+  };
 
   # systemd.services.sign-nvidia-module = {
   #   description = "Sign NVIDIA kernel module with MOK key";
