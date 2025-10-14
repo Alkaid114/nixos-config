@@ -16,29 +16,29 @@
   fileSystems."/" =
     { device = "/dev/disk/by-uuid/e6f043db-9169-4aa4-a231-fbdbc92642d2";
       fsType = "btrfs";
-      options = [ "subvol=@" ];
+      options = [ "subvol=@" "compress=zstd:1" "noatime" "ssd" ];
     };
 
   fileSystems."/home" =
     { device = "/dev/disk/by-uuid/e6f043db-9169-4aa4-a231-fbdbc92642d2";
       fsType = "btrfs";
-      options = [ "subvol=@home" ];
+      options = [ "subvol=@home" "compress=zstd:5" "noatime" "ssd" ];
     };
 
   fileSystems."/var/log" =
     { device = "/dev/disk/by-uuid/e6f043db-9169-4aa4-a231-fbdbc92642d2";
       fsType = "btrfs";
-      options = [ "subvol=@log" ];
+      options = [ "subvol=@log" "compress=zstd:7" "noatime" "ssd" ];
     };
 
   fileSystems."/var/cache" =
     { device = "/dev/disk/by-uuid/e6f043db-9169-4aa4-a231-fbdbc92642d2";
       fsType = "btrfs";
-      options = [ "subvol=@cache" ];
+      options = [ "subvol=@cache" "compress=zstd:1" "noatime" "ssd" ];
     };
 
   fileSystems."/boot" =
-    { device = "/dev/disk/by-uuid/C2B2-BB95";
+    { device = "/dev/disk/by-uuid/4543-6113";
       fsType = "vfat";
       options = [ "fmask=0022" "dmask=0022" ];
     };
@@ -46,11 +46,11 @@
   fileSystems."/nix" =
     { device = "/dev/disk/by-uuid/e6f043db-9169-4aa4-a231-fbdbc92642d2";
       fsType = "btrfs";
-      options = [ "subvol=@nix" ];
+      options = [ "subvol=@nix" "compress=zstd:4" "noatime" "ssd" ];
     };
 
   swapDevices =
-    [ { device = "/dev/disk/by-uuid/2d3305d5-728e-4adf-a66a-7404bea513fa"; }
+    [ { device = "/dev/disk/by-uuid/d3d4f685-36d8-4d26-ba90-91eddc792dbd"; }
     ];
 
   # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
