@@ -4,6 +4,9 @@
     packages = with pkgs; [
       # icon fonts
       material-design-icons
+      material-symbols
+      inter
+      material-icons
 
       # normal fonts
       noto-fonts

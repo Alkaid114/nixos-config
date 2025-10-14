@@ -11,6 +11,7 @@
       "wheel"
       "audio"
       "power"
+      "storage"
     ];
   };
 
