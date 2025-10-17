@@ -35,4 +35,9 @@
     lsof # list open files
 
   ];
+
+  programs.obs-studio = {
+    enable = true;
+    enableVirtualCamera = true;
+  };
 }

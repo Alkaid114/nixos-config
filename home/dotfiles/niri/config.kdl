@@ -36,15 +36,17 @@ input {
     touchpad {
         // off
         tap
-        // dwt
+        dwt
         // dwtp
         // drag false
         // drag-lock
         natural-scroll
         // accel-speed 0.2
         // accel-profile "flat"
-        // scroll-method "two-finger"
-        // disabled-on-external-mouse
+        // tap-button-map "left-right-middle"
+        // click-method "clickfinger"
+         // scroll-method "two-finger"
+        disabled-on-external-mouse
     }
 
     mouse {
@@ -72,6 +74,14 @@ input {
     // Focus windows and outputs automatically when moving the mouse into them.
     // Setting max-scroll-amount="0%" makes it work only on windows already fully on screen.
     // focus-follows-mouse max-scroll-amount="0%"
+}
+
+output "DP-5" {
+    mode "2560x1440@199.999"
+    scale 1.0
+    transform "normal"
+    variable-refresh-rate on-demand=true
+    focus-at-startup
 }
 
 output "HDMI-A-1" {
