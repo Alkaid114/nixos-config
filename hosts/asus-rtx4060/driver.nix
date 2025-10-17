@@ -120,6 +120,14 @@
     VDPAU_DRIVER = "radeonsi";       # 可选，某些播放器用 VDPAU
   };
 
+  services.libinput.touchpad = {
+    naturalScrolling = true;
+    disableWhileTyping = true;
+    sendEventsMode = "disable-on-external-mouse";
+    tappingButtonMap = "lrm";
+    tappingDragLock = true;
+  };
+
   # systemd.services.sign-nvidia-module = {
   #   description = "Sign NVIDIA kernel module with MOK key";
   #   wantedBy = [ "multi-user.target" ];
