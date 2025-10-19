@@ -6,6 +6,7 @@
   stateVersion,
   inputs,
   pkgs,
+  lib,
   ...
 }:
 {
@@ -26,7 +27,7 @@
       device = "nodev"; # "nodev"
       efiSupport = true;
       useOSProber = true; # 自动检测 Windows
-      theme = inputs.nixos-grub-themes.packages.${pkgs.system}.nixos;
+      theme = lib.mkForce inputs.nixos-grub-themes.packages.${pkgs.system}.nixos;
       #efiInstallAsRemovable = true; # in case canTouchEfiVariables doesn't work for your system
     };
   };
@@ -68,7 +69,10 @@
     enable32Bit = true;
   };
 
-  powerManagement.cpufreq.max = 3800000;
+  powerManagement = {
+    enable = true;
+    cpufreq.max = 3800000;
+  };
 
   # AMDGPU 模块
   boot.kernelModules = [ "amdgpu" ];
@@ -116,8 +120,8 @@
   ];
 
   environment.sessionVariables = {
-    LIBVA_DRIVER_NAME = "radeonsi";  # AMD VA-API 驱动
-    VDPAU_DRIVER = "radeonsi";       # 可选，某些播放器用 VDPAU
+    LIBVA_DRIVER_NAME = "radeonsi"; # AMD VA-API 驱动
+    VDPAU_DRIVER = "radeonsi"; # 可选，某些播放器用 VDPAU
   };
 
   services.libinput.touchpad = {

@@ -2,6 +2,7 @@
 {
   imports = [
     ./dm.nix
+    ../../home/stylix
   ];
 
   programs.niri.enable = true;

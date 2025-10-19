@@ -8,9 +8,19 @@
     niri.url = "github:sodiboo/niri-flake";
     stylix.url = "github:nix-community/stylix";
     flake-parts.url = "github:hercules-ci/flake-parts";
+    dgop = {
+      url = "github:AvengeMedia/dgop";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    dms-cli = {
+      url = "github:AvengeMedia/danklinux";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     dankMaterialShell = {
       url = "github:AvengeMedia/DankMaterialShell";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.dgop.follows = "dgop";
+      inputs.dms-cli.follows = "dms-cli";
     };
 
     home-manager = {
@@ -67,28 +77,28 @@
                 ./hosts/asus-rtx4060/driver.nix
                 ./os
 
-                home-manager.nixosModules.home-manager
-                {
-                  home-manager.extraSpecialArgs = {
-                    inherit stateVersion;
-                    inherit username;
-                  };
-                  home-manager.useUserPackages = true;
-                  home-manager.users.${username} = {
-                    nixpkgs.config.allowUnfree = true;
-                    home = {
-                      username = username;
-                      homeDirectory = "/home/${username}";
-                      stateVersion = stateVersion;
-                    };
-                    imports = [
-                      ./home
-                      stylix.homeModules.stylix
-                      dankMaterialShell.homeModules.dankMaterialShell.default
-                      dankMaterialShell.homeModules.dankMaterialShell.niri
-                    ];
-                  };
-                }
+                # home-manager.nixosModules.home-manager
+                # {
+                #   home-manager.extraSpecialArgs = {
+                #     inherit stateVersion;
+                #     inherit username;
+                #   };
+                #   home-manager.useUserPackages = true;
+                #   home-manager.users.${username} = {
+                #     nixpkgs.config.allowUnfree = true;
+                #     home = {
+                #       username = username;
+                #       homeDirectory = "/home/${username}";
+                #       stateVersion = stateVersion;
+                #     };
+                #     imports = [
+                #       ./home
+                #       stylix.homeModules.stylix
+                #       dankMaterialShell.homeModules.dankMaterialShell.default
+                #       dankMaterialShell.homeModules.dankMaterialShell.niri
+                #     ];
+                #   };
+                # }
 
                 {
                   nixpkgs.overlays = [
@@ -102,6 +112,39 @@
                 chaotic.nixosModules.nyx-overlay
                 chaotic.nixosModules.nyx-registry
               ];
+            };
+          };
+
+          homeConfigurations = {
+            alkaid = home-manager.lib.homeManagerConfiguration {
+              extraSpecialArgs = {
+                inherit stateVersion;
+                inherit inputs;
+                inherit username;
+              };
+              pkgs = import inputs.nixpkgs {
+                system = "x86_64-linux";
+                config.allowUnfree = true;
+              };
+
+              modules = [
+                {
+                  home.stateVersion = stateVersion;
+                  home.username = username;
+                  home.homeDirectory = "/home/${username}";
+                }
+                {
+                  nixpkgs.overlays = [
+                    niri.overlays.niri
+                  ];
+                }
+                ./home
+                inputs.niri.homeModules.niri
+                inputs.stylix.homeModules.stylix
+                inputs.dankMaterialShell.homeModules.dankMaterialShell.default
+                inputs.dankMaterialShell.homeModules.dankMaterialShell.niri
+              ];
+
             };
           };
         };

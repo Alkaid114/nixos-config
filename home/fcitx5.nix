@@ -68,4 +68,10 @@
   #   #  SDL_IM_MODULE="fcitx";
   #   #  GLFW_IM_MODULE= lib.mkForce "fcitx";
   # };
+  home.sessionVariables = {
+    # GTK_IM_MODULE = "fcitx";
+    # QT_IM_MODULE = "fcitx";
+    XMODIFIERS = "@im=fcitx";
+    # INPUT_METHOD = "fcitx";
+  };
 }
