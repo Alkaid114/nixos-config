@@ -13,7 +13,7 @@
 
   home.sessionVariables = {
     EDITOR = "vim";
-    BROWSER = "google-chrome";
+    BROWSER = "google-chrome-stable";
     TERMINAL = "wezterm";
   };
 
