@@ -13,8 +13,9 @@
     ];
     allowedTCPPorts = [ 7897 7890 7891 7893 7894 ]; # Clash
     allowedUDPPorts = [ 7897 7890 7891 7893 7894];
+    
   };
-
+  networking.nameservers = [ "1.1.1.1" "223.5.5.5" ];
   networking.firewall.checkReversePath = false;
 
 
