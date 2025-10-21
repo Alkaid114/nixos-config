@@ -20,7 +20,65 @@
     temperature.night = 5700;
   };
 
-    # "ni
+  # 外接显示器时禁用笔记本屏幕
+  services.kanshi = {
+    enable = true;
+    profiles = {
+      # 仅笔记本显示器
+      laptop-only = {
+        outputs = [
+          {
+            criteria = "eDP-1";
+            status = "enable";
+          }
+        ];
+      };
+      # 连接 DP-5 时
+      with-dp5 = {
+        outputs = [
+          {
+            criteria = "eDP-1";
+            status = "disable";
+          }
+          {
+            criteria = "DP-5";
+            status = "enable";
+          }
+        ];
+      };
+      # 连接 HDMI-1 时
+      with-hdmi = {
+        outputs = [
+          {
+            criteria = "eDP-1";
+            status = "disable";
+          }
+          {
+            criteria = "HDMI-1";
+            status = "enable";
+          }
+        ];
+      };
+      # 同时连接 DP-5 和 HDMI-1 时
+      with-both = {
+        outputs = [
+          {
+            criteria = "eDP-1";
+            status = "disable";
+          }
+          {
+            criteria = "DP-5";
+            status = "enable";
+          }
+          {
+            criteria = "HDMI-1";
+            status = "enable";
+          }
+        ];
+      };
+    };
+  };
+
   programs.dankMaterialShell = {
     enable = true;
     enableSystemd = true;
