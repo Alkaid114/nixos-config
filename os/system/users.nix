@@ -3,7 +3,7 @@
   users.users.${username} = {
     name = username;
     isNormalUser = true;
-    shell = pkgs.fish;
+    shell = pkgs.zsh;
     description = username;
     initialPassword = "114514";
     extraGroups = [
