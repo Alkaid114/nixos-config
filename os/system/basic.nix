@@ -7,7 +7,7 @@
   time.timeZone = "Asia/Shanghai";
 
   # Select internationalisation properties.
-  i18n.defaultLocale = "zh_CN.UTF-8";
+  i18n.defaultLocale = "en_US.UTF-8";
 
   i18n.extraLocaleSettings = {
     LC_MESSAGES = "en_US.UTF-8"; # 错误提示、命令行输出用英文
@@ -76,5 +76,22 @@
     blueman
   ];
 
-  hardware.bluetooth.enable = true;
+  hardware.bluetooth = {
+    enable = true;
+    powerOnBoot = true;
+    # 配置输入设备（键盘、鼠标）防止自动断开
+    input = {
+      General = {
+        IdleTimeout = 0;  # 禁用空闲超时，防止键盘自动断开
+        ClassicBondedOnly = false;
+      };
+    };
+    # 全局蓝牙设置
+    settings = {
+      General = {
+        Enable = "Source,Sink,Media,Socket";
+        Experimental = true;
+      };
+    };
+  };
 }

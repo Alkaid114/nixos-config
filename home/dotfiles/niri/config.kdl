@@ -275,8 +275,18 @@ layout {
 environment {
   DISPLAY ":0"
   XIM "fcitx"
-  GTK_IM_MODULE "fcitx"
-  QT_IM_MODULE "fcitx"
+  //GTK_IM_MODULE "fcitx"
+  //QT_IM_MODULE "fcitx"
+  LANG "zh_CN.UTF-8"
+  LC_TIME "zh_CN.UTF-8"
+  LC_NUMERIC "zh_CN.UTF-8"
+  LC_MONETARY "zh_CN.UTF-8"
+  LC_PAPER "zh_CN.UTF-8"
+  LC_NAME "zh_CN.UTF-8"
+  LC_ADDRESS "zh_CN.UTF-8"
+  LC_TELEPHONE "zh_CN.UTF-8"
+  LC_IDENTIFICATION "zh_CN.UTF-8"
+  LC_MEASUREMENT "zh_CN.UTF-8"
 }
 
 // Add lines like this to spawn processes at startup.
