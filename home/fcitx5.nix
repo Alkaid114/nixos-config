@@ -43,7 +43,6 @@
         ]);
       settings = {
         addons = {
-
         };
         #globalOptions = { "Hotkey/TriggerKeys" = { "0" = "Alt+space"; }; };
         inputMethod = {
@@ -53,7 +52,8 @@
             DefaultIM = "keyboard-us";
           };
           "Groups/0/Items/0".Name = "keyboard-us";
-          "Groups/0/Items/1".Name = "shuangpin";
+          # "Groups/0/Items/1".Name = "shuangpin";
+          "Groups/0/Items/1".Name = "rime";
           GroupOrder."0" = "Default";
         };
       };
