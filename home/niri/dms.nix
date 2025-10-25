@@ -55,6 +55,9 @@ in
 {
   home.packages = with pkgs; [
     matugen
+    wl-clipboard
+    cliphist
+    cava
   ];
   # programs.quickshell.configs.dms =
   #   let
