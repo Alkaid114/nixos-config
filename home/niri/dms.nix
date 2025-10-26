@@ -53,12 +53,7 @@ let
   };
 in
 {
-  home.packages = with pkgs; [
-    matugen
-    wl-clipboard
-    cliphist
-    cava
-  ];
+  
   # programs.quickshell.configs.dms =
   #   let
   #     dankMaterialShell =
@@ -251,6 +246,6 @@ in
   #     }
   #   '';
   home.sessionVariables = {
-    DMS_DISABLE_MATUGEN = "1";
+    DMS_DISABLE_MATUGEN = "0";
   };
 }

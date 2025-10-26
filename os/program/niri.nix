@@ -1,4 +1,9 @@
-{ pkgs, config, ... }:
+{
+  pkgs,
+  inputs,
+  config,
+  ...
+}:
 {
   imports = [
     ./dm.nix
@@ -21,16 +26,16 @@
       swayidle
       xwayland-satellite
       gnome-keyring
-      wlsunset
+      # wlsunset
       nautilus
       gnome.gvfs
       adwaita-icon-theme
       gnome-themes-extra
-
+      inputs.noctalia.packages.${system}.default
     ]
     ++ (with kdePackages; [
       dolphin
-      breeze-icons 
+      breeze-icons
     ]);
 
   # programs.thunar = {
@@ -45,6 +50,18 @@
   security.soteria.enable = true;
 
   services.gvfs.enable = true;
+
+  services.noctalia-shell.enable = true;
+
+  programs.uwsm = {
+    enable = true;
+    waylandCompositors = {
+      niri = {
+        prettyName = "Niri";
+        binPath = "${pkgs.niri}/bin/niri";
+      };
+    };
+  };
 
   # 压缩解压
   programs.file-roller.enable = true;

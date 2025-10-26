@@ -900,3 +900,17 @@ binds {
 overview {
     backdrop-color "#8caaee"
 }
+
+//window-rule {
+//    geometry-corner-radius 20
+//    clip-to-geometry true
+//}
+
+layer-rule {
+    match namespace="^quickshell-overview$"
+    place-within-backdrop true
+}
+
+debug {
+    honor-xdg-activation-with-invalid-serial
+}

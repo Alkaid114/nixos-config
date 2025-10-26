@@ -1,10 +1,16 @@
-{ config, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 {
   imports = [
     ./wallpaper.nix
     ./swaylock.nix
     ./waybar.nix
-    ./dms.nix
+    # ./dms.nix
+    ./noctalia.nix
     ./mako.nix
   ];
   programs.fuzzel.enable = true; # Super+D in the default setting (app launcher)
@@ -13,12 +19,12 @@
   services.swayidle.enable = true; # idle management daemon
 
   # 夜光护眼软件
-  services.wlsunset = {
-    enable = true;
-    sunset = "00:00";
-    sunrise = "00:00";
-    temperature.night = 5700;
-  };
+  # services.wlsunset = {
+  #   enable = true;
+  #   sunset = "00:00";
+  #   sunrise = "00:00";
+  #   temperature.night = 5700;
+  # };
 
   # 外接显示器时禁用笔记本屏幕
   services.kanshi = {
@@ -87,10 +93,17 @@
     ];
   };
 
-  programs.dankMaterialShell = {
-    enable = true;
-    enableSystemd = true;
-  };
+  home.packages = with pkgs; [
+    matugen
+    cliphist
+  ];
+  programs.cava.enable = true;
+  services.cliphist.enable = true;
+
+  # programs.dankMaterialShell = {
+  #   enable = true;
+  #   enableSystemd = true;
+  # };
   # xdg.configFile = {
   #   # "swaylock".source = ../dotfiles/swaylock;
 
@@ -104,6 +117,10 @@
 
     "niri".source = ../dotfiles/niri;
     "fuzzel".source = ../dotfiles/fuzzel;
+  };
+
+  home.sessionVariables = {
+    QT_QPA_PLATFORMTHEME="gtk3";
   };
 
   dconf.settings."org/gnome/desktop/interface".color-scheme = lib.mkForce "prefer-dark";

@@ -33,6 +33,17 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # noctalia = {
+    #   url = "github:noctalia-dev/noctalia-shell";
+    #   inputs.nixpkgs.follows = "nixpkgs";
+    #   inputs.quickshell.follows = "quickshell";  # Use same quickshell version
+    # };
+    noctalia = {
+      url = "github:a1kari8/noctalia-shell/hibernate";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.quickshell.follows = "quickshell";
+    };
+
     nixos-grub-themes.url = "github:jeslie0/nixos-grub-themes";
   };
 
@@ -111,6 +122,7 @@
                 chaotic.nixosModules.nyx-cache
                 chaotic.nixosModules.nyx-overlay
                 chaotic.nixosModules.nyx-registry
+                inputs.noctalia.nixosModules.default
               ];
             };
           };
@@ -143,6 +155,7 @@
                 inputs.stylix.homeModules.stylix
                 inputs.dankMaterialShell.homeModules.dankMaterialShell.default
                 inputs.dankMaterialShell.homeModules.dankMaterialShell.niri
+                inputs.noctalia.homeModules.default
               ];
 
             };

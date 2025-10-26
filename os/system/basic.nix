@@ -60,8 +60,8 @@
 
   environment.systemPackages = with pkgs; [
     btrfs-progs # Btrfs 命令行工具，如 btrfs subvolume/snapshot
-    snapper # 快照管理工具
-    btrfs-assistant # 图形化快照管理工具（如可用）
+    # snapper # 快照管理工具
+    # btrfs-assistant # 图形化快照管理工具（如可用）
     mesa-demos
     # system tools
     sysstat
