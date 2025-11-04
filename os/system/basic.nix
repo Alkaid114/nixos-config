@@ -56,7 +56,11 @@
       # no need to redefine it in your config for now)
       #media-session.enable = true;
     };
+
+    flatpak.enable = true;
   };
+
+  xdg.portal.enable = true;
 
   environment.systemPackages = with pkgs; [
     btrfs-progs # Btrfs 命令行工具，如 btrfs subvolume/snapshot

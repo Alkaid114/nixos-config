@@ -34,6 +34,7 @@
     strace # system call monitoring
     lsof # list open files
 
+    ffmpeg-full
   ];
 
   programs.obs-studio = {

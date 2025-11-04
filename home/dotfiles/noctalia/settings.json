@@ -208,14 +208,16 @@
         }
     },
     "dock": {
-        "backgroundOpacity": 1,
+        "backgroundOpacity": 0.4,
         "colorizeIcons": false,
         "displayMode": "auto_hide",
-        "floatingRatio": 1,
-        "monitors": [],
+        "floatingRatio": 0.49,
+        "monitors": [
+            "eDP-1"
+        ],
         "onlySameOutput": true,
         "pinnedApps": [],
-        "size": 1
+        "size": 0.6
     },
     "general": {
         "animationDisabled": false,
