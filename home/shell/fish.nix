@@ -8,7 +8,6 @@
 {
   home.packages = with pkgs; [
     fishPlugins.fzf-fish
-    fishPlugins.done
     fishPlugins.forgit
     fzf
     fishPlugins.grc
@@ -19,7 +18,7 @@
   ];
 
   xdg.configFile = {
-    "starship.toml".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/nixos-config/home/dotfiles/starship.toml";
+    "starship.toml".source = ./dotfiles/starship.toml;
   };
 
   programs.fish = {
@@ -32,10 +31,6 @@
       {
         name = "fzf-fish";
         src = pkgs.fishPlugins.fzf-fish;
-      }
-      {
-        name = "done";
-        src = pkgs.fishPlugins.done;
       }
       {
         name = "forgit";

@@ -1,10 +1,14 @@
 { pkgs, ... }:
 {
-  environment.shells = with pkgs; [
-    bash
-    zsh
-  ];
   programs.bash.enable = true;
-  programs.zsh.enable = true;
-  programs.fish.enable = true;
+  programs.zsh = {
+    enable = true;
+    syntaxHighlighting.enable = true;
+    enableBashCompletion = true;
+    enableCompletion = true;
+    autosuggestions.enable = true;
+    interactiveShellInit = ''
+      alias ls='lsd'
+    '';
+  };
 }

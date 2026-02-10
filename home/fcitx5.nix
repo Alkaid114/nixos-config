@@ -5,19 +5,8 @@
     type = "fcitx5";
     enable = true;
     fcitx5 = {
-      waylandFrontend = true; # 使用 Wayland
+      waylandFrontend = true;
       addons =
-        # let
-        # 为了不使用默认的 rime-data，改用我自定义的小鹤音形数据，这里需要 override
-        # 参考 https://github.com/NixOS/nixpkgs/blob/e4246ae1e7f78b7087dce9c9da10d28d3725025f/pkgs/tools/inputmethods/fcitx5/fcitx5-rime.nix
-        # config.packageOverrides = pkgs: {
-        #     fcitx5-rime = pkgs.fcitx5-rime.override {rimeDataPkgs = [
-        #     # 小鹤音形配置，配置来自 flypy.com 官方网盘的鼠须管配置压缩包「小鹤音形“鼠须管”for macOS.zip」
-        #     # 我仅修改了 default.yaml 文件，将其中的半角括号改为了直角括号「 与 」。
-        #     ./rime-data-flypy
-        #     ];};
-        # };
-        # in
         with pkgs;
         [
           fcitx5-mozc
@@ -26,14 +15,6 @@
           fcitx5-nord
           fcitx5-rime
           fcitx5-table-extra
-          # fcitx5-rime
-          # fcitx5-configtool
-          # fcitx5-lua
-          # kdePackages.fcitx5-configtool
-          # fcitx5-with-plugins
-          # fcitx5-gtk               # GTK 支持
-          # kdePackages.fcitx5-qt   # Qt 支持（KDE 用户）
-          # fcitx5-chinese-addons
         ]
         ++ (with kdePackages; [
           fcitx5-chinese-addons
@@ -44,7 +25,6 @@
       settings = {
         addons = {
         };
-        #globalOptions = { "Hotkey/TriggerKeys" = { "0" = "Alt+space"; }; };
         inputMethod = {
           "Groups/0" = {
             Name = "Default";
@@ -52,7 +32,6 @@
             DefaultIM = "keyboard-us";
           };
           "Groups/0/Items/0".Name = "keyboard-us";
-          # "Groups/0/Items/1".Name = "shuangpin";
           "Groups/0/Items/1".Name = "rime";
           GroupOrder."0" = "Default";
         };
@@ -61,17 +40,7 @@
     };
   };
 
-  # environment.sessionVariables = {
-  #   #  GTK_IM_MODULE = "fcitx";
-  #   #  QT_IM_MODULE = "fcitx";
-  #   XMODIFIERS = "@im=fcitx";
-  #   #  SDL_IM_MODULE="fcitx";
-  #   #  GLFW_IM_MODULE= lib.mkForce "fcitx";
-  # };
   home.sessionVariables = {
-    # GTK_IM_MODULE = "fcitx";
-    # QT_IM_MODULE = "fcitx";
     XMODIFIERS = "@im=fcitx";
-    # INPUT_METHOD = "fcitx";
   };
 }

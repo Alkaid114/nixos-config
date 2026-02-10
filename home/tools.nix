@@ -3,13 +3,11 @@
   home.packages =
     with pkgs;
     [
-      libreoffice
-      vlc
+      libreoffice-fresh
+      mpv
       gparted
-      swww  # Wayland 壁纸设置工具
     ]
     ++ (with kdePackages; [
-      kate
       okular
       gwenview
       filelight

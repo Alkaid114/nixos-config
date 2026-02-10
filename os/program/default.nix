@@ -9,6 +9,5 @@
     ./proxy.nix
     ./shell.nix
     ./virtual.nix
-    ./printer.nix
   ];
 }

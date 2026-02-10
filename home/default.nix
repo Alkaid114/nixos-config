@@ -5,16 +5,16 @@
     ./shell
     ./terminal.nix
     ./niri
-    ./stylix
+    # ./stylix
     ./coding
     ./social.nix
-    ./commonTools.nix
+    ./tools.nix
   ];
 
   home.sessionVariables = {
     EDITOR = "vim";
     BROWSER = "google-chrome-stable";
-    TERMINAL = "wezterm";
+    TERMINAL = "kitty";
   };
 
   xdg.userDirs = {

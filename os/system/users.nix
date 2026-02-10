@@ -12,8 +12,8 @@
       "audio"
       "power"
       "storage"
+      "video"
+      "input"
     ];
   };
-
-  nix.settings.trusted-users = [ username ];
 }

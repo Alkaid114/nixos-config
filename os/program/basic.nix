@@ -4,13 +4,12 @@
     vim
     wget
     curl
-    # archives
     zip
     xz
+    p7zip
     unzip
-    lm_sensors # for `sensors` command
+    lm_sensors
     fastfetch
-    # misc
     file
     which
     tree
@@ -19,22 +18,13 @@
     gawk
     zstd
     gnupg
-
-    # nix related
-    #
-    # it provides the command `nom` works just like `nix`
-    # with more details log output
     nix-output-monitor
-
-    btop # replacement of htop/nmon
-    # iotop # io monitoring
-    # iftop # network monitoring
-
-    # system call monitoring
-    strace # system call monitoring
-    lsof # list open files
-
+    htop
+    strace
+    lsof
+    lsd
     ffmpeg-full
+    tealdeer
   ];
 
   programs.obs-studio = {

@@ -1,49 +1,34 @@
 { ... }:
 {
-  # Enable networking
   networking.networkmanager.enable = true;
 
-  # networking.firewall.allowedTCPPorts = [ ... ];
-  # networking.firewall.allowedUDPPorts = [ ... ];
-  # Or disable the firewall altogether.
-  networking.firewall = {
-    enable = true;
-    trustedInterfaces = [
-      "Meta"
+  networking = {
+    nameservers = [ 
+      "1.1.1.1" 
+      "223.5.5.5" 
+      "223.6.6.6" 
+      "2400:3200::1" 
+      "2400:3200:baba::1" 
     ];
-    allowedTCPPorts = [ 7897 7890 7891 7893 7894 ]; # Clash
-    allowedUDPPorts = [ 7897 7890 7891 7893 7894];
-    
+    wireguard.enable = true;
+    nftables.enable= true;
   };
-  networking.nameservers = [ "1.1.1.1" "223.5.5.5" ];
-  networking.firewall.checkReversePath = false;
-
-
-  # Enable the OpenSSH daemon.
-  services.openssh = {
-    enable = false;
-    settings = {
-      X11Forwarding = true;
-      PermitRootLogin = "no"; # disable root login
-      PasswordAuthentication = false; # disable password login
+  services.firewalld = {
+    enable = true;
+    zones = {
+      trusted = {
+        masquerade = true;
+        interfaces = [ "Meta" "Mihomo" "FlClash" ];
+      };
     };
-    openFirewall = true;
   };
-
-  # networking.networkmanager.connectionProfiles = [
-  #   {
-  #     connection.id = "static-wlp4s0";
-  #     connection.type = "ethernet";
-  #     connection.interface-name = "wlp4s0";
-  #     ipv4.addresses = [
-  #       {
-  #         address = "192.168.1.16";
-  #         prefixLength = 24;
-  #       }
-  #     ];
-  #     ipv4.gateway = "192.168.124.2";
-  #     ipv4.dns = ["223.5.5.5"];
-  #     ipv4.method = "manual";
-  #   }
-  # ];
+  # services.openssh = {
+  #   enable = false;
+  #   settings = {
+  #     X11Forwarding = false;
+  #     PermitRootLogin = "no";
+  #     PasswordAuthentication = false;
+  #   };
+  #   openFirewall = true;
+  # };
 }

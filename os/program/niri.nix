@@ -7,51 +7,54 @@
 {
   imports = [
     ./dm.nix
-    ../../home/stylix
+    # ../../home/stylix
   ];
 
-  programs.niri.enable = true;
-
-  services.gnome.gnome-keyring.enable = true;
-  security.pam.services.swaylock = { };
-
-  # programs.alacritty.enable = true; # Super+T in the default setting (terminal)
+  programs.niri = {
+    enable = true;
+    useNautilus = true;
+    package = pkgs.niri.overrideAttrs (oldAttrs: {
+      doCheck = false;
+      patches = (oldAttrs.patches or []) ++ [
+        ./patches/niri-shm.patch
+      ];
+      env = (oldAttrs.env or {}) // {
+        RUSTFLAGS = "-C target-cpu=native";
+        CARGO_PROFILE_RELEASE_OPT_LEVEL = "3";
+        CARGO_PROFILE_RELEASE_LTO = "fat";
+        CARGO_PROFILE_RELEASE_CODEGEN_UNITS = "1";
+      };
+    });
+  };
+  
   environment.systemPackages =
     with pkgs;
     [
-      wezterm
+      kitty
       fuzzel
-      swaylock
-      mako
-      swayidle
       xwayland-satellite
       gnome-keyring
-      # wlsunset
       nautilus
       gnome.gvfs
       adwaita-icon-theme
       gnome-themes-extra
-      inputs.noctalia.packages.${system}.default
-    ]
-    ++ (with kdePackages; [
-      dolphin
-      breeze-icons
-    ]);
+      hyprpolkitagent
+      file-roller
+    ];
 
-  # programs.thunar = {
-  #   enable = true;
-  #   plugins = with pkgs.xfce; [
-  #     thunar-volman
-  #     thunar-archive-plugin
-  #   ];
-  # };
+  services = {
+    gvfs.enable = true;
+    gnome.gnome-keyring.enable = true;
+  };
 
-  # polkit agent
-  security.soteria.enable = true;
-
-  services.gvfs.enable = true;
-
-  services.noctalia-shell.enable = true;
+  xdg = {
+    portal = {
+      enable = true;
+      xdgOpenUsePortal = true;
+      extraPortals = with pkgs; [ xdg-desktop-portal-gtk xdg-desktop-portal-gnome ];
+    };
+    mime.enable = true;
+  };
 
   programs.uwsm = {
     enable = true;
@@ -63,6 +66,9 @@
     };
   };
 
-  # 压缩解压
-  programs.file-roller.enable = true;
+  programs.dms-shell = {
+    enable = true;
+    systemd.enable = true;
+    enableClipboardPaste = true;
+  };
 }
