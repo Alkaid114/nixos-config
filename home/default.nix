@@ -9,6 +9,7 @@
     ./coding
     ./social.nix
     ./tools.nix
+    ./games.nix
   ];
 
   home.sessionVariables = {

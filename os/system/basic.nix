@@ -20,6 +20,7 @@
   programs.dconf.enable = true;
   security.polkit.enable = true;
   xdg.portal.enable = true;
+  security.rtkit.enable = true;
   services = {
     printing.enable = true;
     pulseaudio.enable = false;
@@ -39,6 +40,13 @@
     flatpak.enable = true;
     libinput.enable = true;
   };
+  programs.appimage = {
+    enable = true;
+    binfmt = true;
+  };
+  boot.extraModprobeConfig = ''
+    options hid_apple fnmode=2
+  '';
   environment.systemPackages = with pkgs; [
     btrfs-progs
     mesa-demos

@@ -9,5 +9,6 @@
     ./proxy.nix
     ./shell.nix
     ./virtual.nix
+    ./steam.nix
   ];
 }
