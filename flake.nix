@@ -19,7 +19,7 @@
   };
 
   nixConfig = {
-    substituters = [ "https://mirrors.tuna.tsinghua.edu.cn/nix-channels/store" ];
+    substituters = [ https://cache.nixos.org "https://mirrors.tuna.tsinghua.edu.cn/nix-channels/store" ];
     trusted-public-keys = [ "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=" ];
   };
 
@@ -31,6 +31,7 @@
       flake =
         let
           username = "alkaid";
+          isoUsername = "nixos";
         in
         {
           nixosConfigurations = {
@@ -40,6 +41,15 @@
                 ./hosts/asus-tx5pro
                 ./os/desktop.nix
                 # inputs.stylix.nixosModules.stylix
+              ];
+            };
+            iso = inputs.nixpkgs.lib.nixosSystem {
+              specialArgs = { inherit inputs; username = isoUsername; };
+              modules = [
+                "${inputs.nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-graphical-gnome.nix"
+                "${inputs.nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
+                ./os/program/proxy.nix
+                ./hosts/iso
               ];
             };
           };
@@ -68,6 +78,7 @@
       perSystem =
         { pkgs, ... }:
         {
+          packages.default = inputs.self.nixosConfigurations.iso.config.system.build.image;
           formatter = pkgs.nixfmt-tree;
         };
     };

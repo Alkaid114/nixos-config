@@ -2,7 +2,7 @@
 {
   environment.systemPackages = with pkgs; [
     nixd
-    nixfmt-rfc-style
+    nixfmt-tree
     vscode
     git
     gdb

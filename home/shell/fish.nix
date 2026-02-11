@@ -18,7 +18,7 @@
   ];
 
   xdg.configFile = {
-    "starship.toml".source = ./dotfiles/starship.toml;
+    "starship.toml".source = ../dotfiles/.config/starship.toml;
   };
 
   programs.fish = {
@@ -26,6 +26,7 @@
     interactiveShellInit = ''
       starship init fish | source
       set fish_greeting # Disable greeting
+      alias ls='lsd'
     '';
     plugins = [
       {

@@ -22,7 +22,6 @@
         RUSTFLAGS = "-C target-cpu=native";
         CARGO_PROFILE_RELEASE_OPT_LEVEL = "3";
         CARGO_PROFILE_RELEASE_LTO = "fat";
-        CARGO_PROFILE_RELEASE_CODEGEN_UNITS = "1";
       };
     });
   };
@@ -57,15 +56,15 @@
     mime.enable = true;
   };
 
-  programs.uwsm = {
-    enable = true;
-    waylandCompositors = {
-      niri = {
-        prettyName = "Niri";
-        binPath = "${pkgs.niri}/bin/niri";
-      };
-    };
-  };
+  # programs.uwsm = {
+  #   enable = true;
+  #   waylandCompositors = {
+  #     niri = {
+  #       prettyName = "Niri";
+  #       binPath = "${pkgs.niri}/bin/niri";
+  #     };
+  #   };
+  # };
 
   programs.dms-shell = {
     enable = true;

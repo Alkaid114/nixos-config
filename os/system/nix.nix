@@ -6,7 +6,7 @@
       "flakes"
       "pipe-operators"
     ];
-    substituters = lib.mkForce [
+    substituters = [
       "https://mirrors.tuna.tsinghua.edu.cn/nix-channels/store"
     ];
     trusted-public-keys = [
