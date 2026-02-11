@@ -11,31 +11,31 @@
   programs.nix-ld = {
     enable = true;
     libraries = with pkgs; [
-      stdenv.cc.cc      
-      glibc             
-      zlib             
-      openssl           
+      stdenv.cc.cc
+      glibc
+      zlib
+      openssl
 
-      icu              
-      libxml2          
-      libuuid          
-      libsecret        
-      glib          
-      atk              
+      icu
+      libxml2
+      libuuid
+      libsecret
+      glib
+      atk
       at-spi2-atk
-      cairo            
-      pango          
-      gdk-pixbuf       
-      gtk3          
-      gtk2   
+      cairo
+      pango
+      gdk-pixbuf
+      gtk3
+      gtk2
 
-      wayland         
-      libxkbcommon    
-      libGL            
-      mesa            
+      wayland
+      libxkbcommon
+      libGL
+      mesa
 
       alsa-lib
-      libpulseaudio    
+      libpulseaudio
     ];
   };
   programs.direnv.enable = true;

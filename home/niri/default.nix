@@ -88,7 +88,7 @@
   };
 
   home.sessionVariables = {
-    QT_QPA_PLATFORMTHEME="gtk3";
+    QT_QPA_PLATFORMTHEME = "gtk3";
   };
 
   dconf.settings."org/gnome/desktop/interface".color-scheme = lib.mkForce "prefer-dark";

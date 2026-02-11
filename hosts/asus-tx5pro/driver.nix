@@ -55,9 +55,9 @@
       powerManagement.enable = true;
       prime = {
         offload = {
-            enable = true;
-            enableOffloadCmd = true;
-            offloadCmdMainProgram = "prime-run";
+          enable = true;
+          enableOffloadCmd = true;
+          offloadCmdMainProgram = "prime-run";
         };
         nvidiaBusId = "PCI:1:0:0";
         amdgpuBusId = "PCI:6:0:0";
@@ -83,7 +83,10 @@
     cpufreq.max = 4200000;
   };
 
-  boot.kernelModules = [ "amdgpu" "ntsync" ];
+  boot.kernelModules = [
+    "amdgpu"
+    "ntsync"
+  ];
   boot.kernelParams = [ "modprobe.blacklist=nouveau" ];
   boot.blacklistedKernelModules = [ "nouveau" ];
 
