@@ -1,0 +1,58 @@
+{
+  ...
+}:
+{
+  imports = [
+    ./hardware-configuration.nix
+    ../../hardware/bluetooth.nix
+    ../../hardware/amdgpu.nix
+    ../../hardware/nvidia.nix
+    ../../hardware/wifi.nix
+    ../../hardware/common.nix
+  ];
+
+  networking = {
+    hostName = "asus-tx5pro";
+  };
+
+  hardware = {
+    nvidia = {
+      prime = {
+        offload = {
+          enable = true;
+          enableOffloadCmd = true;
+          offloadCmdMainProgram = "prime-run";
+        };
+        nvidiaBusId = "PCI:1:0:0";
+        amdgpuBusId = "PCI:6:0:0";
+      };
+    };
+  };
+
+  powerManagement = {
+    enable = true;
+    cpufreq.max = 4200000;
+  };
+
+  boot.kernelModules = [
+    "ntsync"
+  ];
+
+  services = {
+    asusd = {
+      enable = true;
+      enableUserService = true;
+    };
+    power-profiles-daemon.enable = true;
+    upower.enable = true;
+    acpid.enable = true;
+  };
+
+  zramSwap = {
+    enable = true;
+    algorithm = "zstd";
+    memoryPercent = 50;
+  };
+
+  system.stateVersion = "25.11";
+}

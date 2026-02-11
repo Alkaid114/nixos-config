@@ -5,7 +5,7 @@
     ./basic.nix
     ./network.nix
     ./nix.nix
-    ./fonts.nix
     ./users.nix
+    ./boot.nix
   ];
 }

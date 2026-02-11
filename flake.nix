@@ -37,8 +37,8 @@
             asus-tx5pro = inputs.nixpkgs.lib.nixosSystem {
               specialArgs = { inherit username inputs; };
               modules = [
-                ./hosts/asus-tx5pro/driver.nix
-                ./os
+                ./hosts/asus-tx5pro
+                ./os/desktop.nix
                 # inputs.stylix.nixosModules.stylix
               ];
             };

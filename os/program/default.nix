@@ -10,5 +10,7 @@
     ./shell.nix
     ./virtual.nix
     ./steam.nix
+    ./pkg.nix
+    ./fonts.nix
   ];
 }
