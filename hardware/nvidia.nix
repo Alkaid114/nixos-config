@@ -8,7 +8,7 @@
     nvidia = {
       modesetting.enable = true;
       open = true;
-      nvidiaSettings = false;
+      nvidiaSettings = true;
       powerManagement.enable = true;
       videoAcceleration = true;
       dynamicBoost.enable = true;

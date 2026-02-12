@@ -9,7 +9,7 @@
     loader = {
       efi = {
         canTouchEfiVariables = true;
-        efiSysMountPoint = "/boot/efi";
+        efiSysMountPoint = "/boot";
       };
       # grub = {
       #   enable = true;
@@ -19,9 +19,10 @@
       #   theme = lib.mkForce inputs.nixos-grub-themes.packages.${pkgs.system}.nixos;
       # };
       limine = {
-        enable = true;
+        enable = false;
         efiSupport = true;
       };
+      systemd-boot.enable = true;
     };
     kernelPackages = pkgs.linuxPackages_zen;
   };

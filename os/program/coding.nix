@@ -3,9 +3,10 @@
   environment.systemPackages = with pkgs; [
     nixd
     nixfmt-tree
-    vscode
     git
     gdb
+    vim
+    nano
   ];
 
   programs.nix-ld = {

@@ -10,6 +10,9 @@
     # ../../home/stylix
   ];
 
+  services.xserver.enable = true;
+  services.xserver.xkb.layout = "us";
+
   programs.niri = {
     enable = true;
     useNautilus = true;
@@ -18,11 +21,11 @@
       patches = (oldAttrs.patches or [ ]) ++ [
         ./patches/niri-shm.patch
       ];
-      env = (oldAttrs.env or { }) // {
-        RUSTFLAGS = "-C target-cpu=native";
-        CARGO_PROFILE_RELEASE_OPT_LEVEL = "3";
-        CARGO_PROFILE_RELEASE_LTO = "fat";
-      };
+      #env = (oldAttrs.env or { }) // {
+      #  RUSTFLAGS = "-C target-cpu=native";
+      #  CARGO_PROFILE_RELEASE_OPT_LEVEL = "3";
+      #  CARGO_PROFILE_RELEASE_LTO = "fat";
+      #};
     });
   };
 

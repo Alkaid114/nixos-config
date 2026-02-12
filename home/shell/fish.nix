@@ -23,11 +23,7 @@
 
   programs.fish = {
     enable = true;
-    interactiveShellInit = ''
-      starship init fish | source
-      set fish_greeting # Disable greeting
-      alias ls='lsd'
-    '';
+    interactiveShellInit = pkgs.lib.fileContents ../dotfiles/.config/fish/config.fish;
     plugins = [
       {
         name = "fzf-fish";

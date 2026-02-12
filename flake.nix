@@ -2,8 +2,8 @@
   description = "Alkaid's NixOS flake";
 
   inputs = {
-    # nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    nixpkgs.url = "git+https://mirrors.tuna.tsinghua.edu.cn/git/nixpkgs.git?ref=nixos-unstable&shallow=1";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    #nixpkgs.url = "git+https://mirrors.tuna.tsinghua.edu.cn/git/nixpkgs.git?ref=nixos-unstable&shallow=1";
     # stylix.url = "github:nix-community/stylix";
     flake-parts.url = "github:hercules-ci/flake-parts";
 
@@ -67,7 +67,7 @@
                   home = {
                     inherit username;
                     homeDirectory = "/home/${username}";
-                    stateVersion = "25.11";
+                    stateVersion = "26.05";
                   };
                 }
                 # inputs.stylix.homeModules.stylix

@@ -17,6 +17,8 @@
     BROWSER = "google-chrome-stable";
     TERMINAL = "kitty";
   };
+  
+  programs.home-manager.enable = true;
 
   xdg.userDirs = {
     enable = true;

@@ -2,16 +2,16 @@
 {
   networking = {
     wireless = {
-      enable = false;
+      enable = true;
       iwd = {
-        enable = true;
+        enable = false;
       };
     };
     networkmanager = {
       enable = true;
-      wifi = {
-        backend = "iwd";
-      };
+      #wifi = {
+        #backend = "iwd";
+      #};
     };
   };
 }

@@ -1,4 +1,4 @@
-{ ... }:
+{ inputs, pkgs, ... }:
 {
   nix.settings.experimental-features = [
     "nix-command"
@@ -7,18 +7,18 @@
   ];
 
   nixpkgs = {
-    hostPlatform = lib.mkDefault "x86_64-linux";
+    hostPlatform = inputs.nixpkgs.lib.mkDefault "x86_64-linux";
     config.allowUnfree = true;
   };
 
   services = {
     qemuGuest.enable = true;
-    openssh.settings.PermitRootLogin = lib.mkForce "yes";
+    openssh.settings.PermitRootLogin = inputs.nixpkgs.lib.mkForce "yes";
   };
 
   boot = {
     kernelPackages = pkgs.linuxPackages_latest;
-    supportedFilesystems = lib.mkForce ["btrfs" "reiserfs" "vfat" "f2fs" "xfs" "ntfs" "cifs"];
+    supportedFilesystems = inputs.nixpkgs.lib.mkForce ["btrfs" "reiserfs" "vfat" "f2fs" "xfs" "ntfs" "cifs"];
   };
 
   networking = {
@@ -26,7 +26,7 @@
   };
 
   systemd = {
-    services.sshd.wantedBy = pkgs.lib.mkForce ["multi-user.target"];
+    services.sshd.wantedBy = inputs.nixpkgs.lib.mkForce ["multi-user.target"];
     targets = {
       sleep.enable = false;
       suspend.enable = false;

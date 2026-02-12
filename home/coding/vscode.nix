@@ -1,10 +1,10 @@
 { pkgs, ... }:
 {
-  home.packages = with pkgs; [
-    (vscode.override {
-      commandLineArgs = [
-        "--wayland-text-input-version=3"
-      ];
-    })
-  ];
+  #home.packages = with pkgs; [
+  #  (vscode.override {
+  #    commandLineArgs = [
+  #      "--wayland-text-input-version=3"
+  #    ];
+  #  })
+  #];
 }

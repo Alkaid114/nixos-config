@@ -13,6 +13,7 @@
       "power"
       "storage"
       "video"
+      "render"
       "input"
     ];
   };
