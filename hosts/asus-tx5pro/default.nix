@@ -1,6 +1,9 @@
 {
   ...
 }:
+# let
+#   nvidia-cfg = pkgs.callPackage ../../hardware/nvidia-laptop-power-cfg.nix {};
+# in
 {
   imports = [
     ./hardware-configuration.nix
@@ -10,6 +13,9 @@
     ../../hardware/wifi.nix
     ../../hardware/common.nix
   ];
+
+  # services.udev.packages = [ nvidia-cfg ];
+  # boot.extraModprobeConfig = builtins.readFile "${nvidia-cfg}/lib/modprobe.d/nvidia.conf";
 
   networking = {
     hostName = "asus-tx5pro";
@@ -26,6 +32,7 @@
         nvidiaBusId = "PCI:1:0:0";
         amdgpuBusId = "PCI:6:0:0";
       };
+      powerManagement.finegrained = true;
     };
   };
 

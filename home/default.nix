@@ -3,13 +3,15 @@
   imports = [
     ./fcitx5.nix
     ./shell
-    ./terminal.nix
+    ./kitty.nix
     ./niri
     # ./stylix
     ./coding
     ./social.nix
     ./tools.nix
     ./games.nix
+    ./kanshi.nix
+    ./fuzzel.nix
   ];
 
   home.sessionVariables = {

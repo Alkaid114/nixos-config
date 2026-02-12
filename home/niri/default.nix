@@ -3,89 +3,46 @@
   lib,
   ...
 }:
+let
+  gpuSelectfuzzel = pkgs.writeShellScript "fuzzel-gpu-select" ''
+    export PATH="${pkgs.lib.makeBinPath [ pkgs.niri pkgs.gnugrep pkgs.coreutils ]}:$PATH"
+    
+    export PATH="$PATH:/run/current-system/sw/bin:$HOME/.nix-profile/bin"
+
+    EXTERNAL_DP_COUNT=$(niri msg outputs | grep "DP" | grep -v "eDP" | wc -l)
+
+    if [ "$EXTERNAL_DP_COUNT" -gt 0 ]; then
+        export __NV_PRIME_RENDER_OFFLOAD=1 
+        export __VK_LAYER_NV_optimus=NVIDIA_only 
+        export __GLX_VENDOR_LIBRARY_NAME=nvidia
+    fi
+
+    if [[ "$*" =~ (obs|gpu-screen-recorder|com.tencent.wemeet) ]]; then
+        unset __NV_PRIME_RENDER_OFFLOAD __VK_LAYER_NV_optimus __GLX_VENDOR_LIBRARY_NAME
+    fi
+
+    exec "$@"
+  '';
+in
 {
   imports = [
     ./wallpaper.nix
   ];
-  programs.fuzzel.enable = true;
   services.polkit-gnome.enable = true;
-
-  # 外接显示器时禁用笔记本屏幕
-  services.kanshi = {
-    enable = true;
-    settings = [
-      {
-        profile = {
-          name = "laptop-only";
-          outputs = [
-            {
-              criteria = "eDP-1";
-              status = "enable";
-            }
-          ];
-        };
-      }
-      {
-        profile = {
-          name = "with-dp5";
-          outputs = [
-            {
-              criteria = "eDP-1";
-              status = "disable";
-            }
-            {
-              criteria = "DP-5";
-              status = "enable";
-            }
-          ];
-        };
-      }
-      {
-        profile = {
-          name = "with-hdmi";
-          outputs = [
-            {
-              criteria = "eDP-1";
-              status = "disable";
-            }
-            {
-              criteria = "HDMI-1";
-              status = "enable";
-            }
-          ];
-        };
-      }
-      {
-        profile = {
-          name = "with-both";
-          outputs = [
-            {
-              criteria = "eDP-1";
-              status = "disable";
-            }
-            {
-              criteria = "DP-5";
-              status = "enable";
-            }
-            {
-              criteria = "HDMI-1";
-              status = "enable";
-            }
-          ];
-        };
-      }
-    ];
-  };
 
   home.packages = with pkgs; [
     matugen
   ];
   programs.cava.enable = true;
-  xdg.configFile = {
-    "niri".source = ../dotfiles/.config/niri;
-    "fuzzel".source = ../dotfiles/.config/fuzzel;
-    "DankMaterialShell".source = ../dotfiles/.config/DankMaterialShell;
-  };
+  xdg.configFile."niri/base.kdl".source = ./niri-base.kdl;
+  xdg.configFile."niri/config.kdl".source = ''
+      include "base.kdl"
+      binds {
+          Mod+D { spawn-sh "fuzzel --launch-prefix=${gpuSelectfuzzel}"; }
+      }
+      spawn-sh-at-startup "QT_QPA_PLATFORMTHEME=gtk3 ${pkgs.dms-shell}/bin/dms restart"
+  '';
+  
 
   home.sessionVariables = {
     QT_QPA_PLATFORMTHEME = "gtk3";

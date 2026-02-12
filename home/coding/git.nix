@@ -1,10 +1,12 @@
 { ... }:
 {
-  # programs.git = {
-  #   enable = true;
-  #   settings = {
-  #     userName = "Alkaid";
-  #     userEmail = "a1kari8@outlook.com";
-  #   };
-  # };
+  programs.git = {
+    enable = true;
+    settings = {
+      user = { 
+        name = "Alkaid";
+        email = "a1kari8@outlook.com";
+      };
+    };
+  };
 }

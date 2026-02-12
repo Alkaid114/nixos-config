@@ -4,6 +4,6 @@
     enable = true;
     autoStart = true;
     tunMode = true;
-    serviceMode = false;
+    serviceMode = true;
   };
 }

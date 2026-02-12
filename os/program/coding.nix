@@ -16,6 +16,7 @@
       glibc
       zlib
       openssl
+      bash
 
       icu
       libxml2
