@@ -1,18 +1,19 @@
-{ ... }:
+{ pkgs, ... }:
 {
   imports = [
     ./fcitx5.nix
     ./shell
     ./kitty.nix
     ./niri
-    ../common/stylix
+    ./stylix.nix
     ./coding
     ./social.nix
     ./tools.nix
-    ./games.nix
+    ./gaming.nix
     ./kanshi.nix
     ./fuzzel.nix
-    #./theme.nix
+    ./theme.nix
+    ./dms-shell.nix
   ];
 
   home.sessionVariables = {
@@ -27,4 +28,10 @@
     enable = true;
     createDirectories = true;
   };
+
+  home.packages =
+    with pkgs;
+    [
+      gnome-themes-extra
+    ];
 }

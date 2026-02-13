@@ -57,9 +57,10 @@ in
           "Groups/0" = {
             "Name" = "Default";
             "Default Layout" = "us";
-            "DefaultIM" = "rime";
+            "DefaultIM" = "keyboard-us";
           };
-          "Groups/0/Items/0".Name = "rime";
+          "Groups/0/Items/0".Name = "keyboard-us";
+          "Groups/0/Items/1".Name = "rime";
           GroupOrder."0" = "Default";
         };
       };

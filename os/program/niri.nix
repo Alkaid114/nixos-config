@@ -5,11 +5,7 @@
   ...
 }:
 {
-  imports = [
-    ./dm.nix
-  ];
-
-  services.xserver.enable = true;
+  # services.xserver.enable = true;
   services.xserver.xkb.layout = "us";
 
   programs.niri = {
@@ -32,13 +28,12 @@
     kitty
     fuzzel
     xwayland-satellite
-    gnome-keyring
     nautilus
-    gnome.gvfs
     adwaita-icon-theme
     gnome-themes-extra
     hyprpolkitagent
     file-roller
+    adwaita-icon-theme
   ];
 
   services = {
@@ -58,19 +53,13 @@
     mime.enable = true;
   };
 
-  # programs.uwsm = {
-  #   enable = true;
-  #   waylandCompositors = {
-  #     niri = {
-  #       prettyName = "Niri";
-  #       binPath = "${pkgs.niri}/bin/niri";
-  #     };
-  #   };
-  # };
-
-  programs.dms-shell = {
+  programs.uwsm = {
     enable = true;
-    systemd.enable = false;
-    enableClipboardPaste = true;
+    waylandCompositors = {
+      niri = {
+        prettyName = "Niri";
+        binPath = "${pkgs.niri}/bin/niri-session";
+      };
+    };
   };
 }

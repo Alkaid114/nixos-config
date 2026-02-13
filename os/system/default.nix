@@ -1,8 +1,7 @@
 { ... }:
 {
   imports = [
-    ./envVars.nix
-    ./basic.nix
+    ./base.nix
     ./network.nix
     ./nix.nix
     ./users.nix

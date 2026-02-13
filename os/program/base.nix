@@ -18,17 +18,26 @@
     gawk
     zstd
     gnupg
-    nix-output-monitor
     htop
     strace
     lsof
     lsd
     ffmpeg-full
     tealdeer
+    ripgrep
+    nvtopPackages.amd
+    nvtopPackages.nvidia
+    nvtopPackages.intel
   ];
 
   programs.obs-studio = {
     enable = true;
     enableVirtualCamera = true;
+  };
+
+  services.flatpak.enable = true;
+  programs.appimage = {
+    enable = true;
+    binfmt = true;
   };
 }

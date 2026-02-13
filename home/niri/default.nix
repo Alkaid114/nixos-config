@@ -46,7 +46,7 @@ in
     binds {
         Mod+D { spawn-sh "fuzzel --launch-prefix=${gpuSelectfuzzel}"; }
     }
-    spawn-sh-at-startup "QT_QPA_PLATFORMTHEME=gtk3 ${pkgs.dms-shell}/bin/dms restart"
+    //spawn-sh-at-startup "sleep 2 && QT_QPA_PLATFORMTHEME=gtk3 ${pkgs.dms-shell}/bin/dms restart"
   '';
 
   home.sessionVariables = {

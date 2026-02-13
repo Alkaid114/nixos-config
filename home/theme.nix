@@ -1,12 +1,17 @@
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 {
   gtk = {
     enable = true;
-    theme = {
-      name = "Adwaita-dark";
-      package = pkgs.gnome-themes-extra;
+    theme = lib.mkForce {
+      name = "catppuccin-mocha-blue-standard"; 
+      
+      package = pkgs.catppuccin-gtk.override {
+        variant = "mocha";
+        accents = [ "blue" ];
+        size = "standard";
+      };
     };
-    iconTheme = {
+    iconTheme = lib.mkDefault {
       name = "Papirus-Dark";
       package = pkgs.papirus-icon-theme;
     };
@@ -21,7 +26,7 @@
 
   qt = {
     enable = true;
-    platformTheme.name = "gtk";
-    style.name = "adwaita-dark";
+    platformTheme.name = "gtk3";
+    style.name = "catppuccin-mocha-blue-standard";
   };
 }

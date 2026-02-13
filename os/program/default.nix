@@ -1,7 +1,7 @@
 { ... }:
 {
   imports = [
-    ./basic.nix
+    ./base.nix
     ./browser.nix
     ./coding.nix
     ./niri.nix
@@ -10,7 +10,7 @@
     ./shell.nix
     ./virtual.nix
     ./steam.nix
-    ./pkg.nix
     ./fonts.nix
+    ./stylix.nix
   ];
 }
