@@ -10,8 +10,4 @@
       };
     };
   };
-
-  environment.systemPackages = with pkgs; [
-    blueman
-  ];
 }

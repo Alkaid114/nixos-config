@@ -30,7 +30,7 @@
       shell = "${pkgs.fish}/bin/fish";
     };
     extraConfig = ''
-      symbol_map U+4E00-U+9FFF Noto Sans CJK SC
+      symbol_map U+4E00-U+9FFF Noto Sans Mono CJK SC
     '';
   };
 }

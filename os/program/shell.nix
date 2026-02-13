@@ -8,8 +8,8 @@
     enableCompletion = true;
     autosuggestions.enable = true;
     interactiveShellInit = ''
-      
-            alias ls='lsd'
+
+      alias ls='lsd'
     '';
   };
 }

@@ -18,7 +18,15 @@
 
   boot = {
     kernelPackages = pkgs.linuxPackages_latest;
-    supportedFilesystems = inputs.nixpkgs.lib.mkForce ["btrfs" "reiserfs" "vfat" "f2fs" "xfs" "ntfs" "cifs"];
+    supportedFilesystems = inputs.nixpkgs.lib.mkForce [
+      "btrfs"
+      "reiserfs"
+      "vfat"
+      "f2fs"
+      "xfs"
+      "ntfs"
+      "cifs"
+    ];
   };
 
   networking = {
@@ -26,7 +34,7 @@
   };
 
   systemd = {
-    services.sshd.wantedBy = inputs.nixpkgs.lib.mkForce ["multi-user.target"];
+    services.sshd.wantedBy = inputs.nixpkgs.lib.mkForce [ "multi-user.target" ];
     targets = {
       sleep.enable = false;
       suspend.enable = false;

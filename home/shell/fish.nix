@@ -14,16 +14,11 @@
     jq
     fd
     grc
-    starship
   ];
-
-  xdg.configFile = {
-    "starship.toml".source = ../dotfiles/.config/starship.toml;
-  };
 
   programs.fish = {
     enable = true;
-    interactiveShellInit = pkgs.lib.fileContents ../dotfiles/.config/fish/config.fish;
+    shellInit = pkgs.lib.fileContents ../dotfiles/.config/fish/config.fish;
     plugins = [
       {
         name = "fzf-fish";

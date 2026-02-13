@@ -10,7 +10,7 @@
     networkmanager = {
       enable = true;
       #wifi = {
-        #backend = "iwd";
+      #backend = "iwd";
       #};
     };
   };

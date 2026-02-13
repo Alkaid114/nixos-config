@@ -1,4 +1,9 @@
-{ lib, username, ... }:
+{
+  lib,
+  username,
+  pkgs,
+  ...
+}:
 {
   nix.settings = {
     experimental-features = [
@@ -20,4 +25,11 @@
     options = lib.mkDefault "--delete-older-than 7d";
   };
   nix.settings.trusted-users = [ username ];
+  programs.nh = {
+    enable = true;
+    flake = "/home/${username}/nixos-config";
+  };
+  environment.systemPackages = with pkgs; [
+    nix-output-monitor
+  ];
 }

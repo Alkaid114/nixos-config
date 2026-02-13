@@ -6,6 +6,7 @@
     ../hardware/keyboard.nix
     ../hardware/audio.nix
     ../hardware/printing.nix
+    ../common/stylix
   ];
 
   services.libinput.enable = true;

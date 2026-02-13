@@ -5,8 +5,14 @@
 }:
 let
   gpuSelectfuzzel = pkgs.writeShellScript "fuzzel-gpu-select" ''
-    export PATH="${pkgs.lib.makeBinPath [ pkgs.niri pkgs.gnugrep pkgs.coreutils ]}:$PATH"
-    
+    export PATH="${
+      pkgs.lib.makeBinPath [
+        pkgs.niri
+        pkgs.gnugrep
+        pkgs.coreutils
+      ]
+    }:$PATH"
+
     export PATH="$PATH:/run/current-system/sw/bin:$HOME/.nix-profile/bin"
 
     EXTERNAL_DP_COUNT=$(niri msg outputs | grep "DP" | grep -v "eDP" | wc -l)
@@ -35,17 +41,16 @@ in
   ];
   programs.cava.enable = true;
   xdg.configFile."niri/base.kdl".source = ./niri-base.kdl;
-  xdg.configFile."niri/config.kdl".source = ''
-      include "base.kdl"
-      binds {
-          Mod+D { spawn-sh "fuzzel --launch-prefix=${gpuSelectfuzzel}"; }
-      }
-      spawn-sh-at-startup "QT_QPA_PLATFORMTHEME=gtk3 ${pkgs.dms-shell}/bin/dms restart"
+  xdg.configFile."niri/config.kdl".text = ''
+    include "base.kdl"
+    binds {
+        Mod+D { spawn-sh "fuzzel --launch-prefix=${gpuSelectfuzzel}"; }
+    }
+    spawn-sh-at-startup "QT_QPA_PLATFORMTHEME=gtk3 ${pkgs.dms-shell}/bin/dms restart"
   '';
-  
 
   home.sessionVariables = {
-    QT_QPA_PLATFORMTHEME = "gtk3";
+    QT_QPA_PLATFORMTHEME = lib.mkForce "gtk3";
   };
 
   dconf.settings."org/gnome/desktop/interface".color-scheme = lib.mkForce "prefer-dark";

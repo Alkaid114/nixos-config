@@ -7,7 +7,6 @@
 {
   imports = [
     ./dm.nix
-    # ../../home/stylix
   ];
 
   services.xserver.enable = true;

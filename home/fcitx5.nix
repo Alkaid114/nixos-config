@@ -4,16 +4,16 @@ let
     owner = "iDvel";
     repo = "rime-ice";
     rev = "5bc4d3057a1953c3d273fb3408ac4e13f2f593b6";
-    sha256 = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="; 
+    sha256 = "sha256-GyiOlTr1Nw2ANTE7/fdyrPQkvRFWOyal3oAcDvsqF5A=";
   };
 in
 {
-  xdg.configFile."fcitx5/rime" = {
+  home.file.".local/share/fcitx5/rime" = {
     source = rime-ice-src;
     recursive = true;
   };
 
-  xdg.configFile."fcitx5/rime/default.custom.yaml".text = ''
+  home.file.".local/share/fcitx5/rime/default.custom.yaml".text = ''
     patch:
       schema_list:
         - schema: double_pinyin
@@ -48,7 +48,7 @@ in
           };
         };
         addons = {
-          "classicui/globalSection" = {
+          "classicui"."globalSection" = {
             "Font" = "Noto Sans CJK SC 11";
             "MenuFont" = "Noto Sans CJK SC 11";
           };
