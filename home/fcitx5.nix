@@ -46,11 +46,26 @@ in
             "DarkTheme" = "Nord-Dark";
             "Theme" = "Nord-Dark";
           };
+          "Hotkey/TriggerKeys" = {
+            "0" = "Alt+Shift+Alt_L";
+          };
         };
         addons = {
           "classicui"."globalSection" = {
             "Font" = "Noto Sans CJK SC 11";
             "MenuFont" = "Noto Sans CJK SC 11";
+            "Theme" = "Nord-Light";
+            "DarkTheme" = "Nord-Dark";
+            "UseDarkTheme" = true;
+            "PerScreenDPI" = true;
+            "UseAccentColor" = true;
+            "EnableFractionalScale" = true;
+          };
+          "clipboard"."globalSection" = {
+            "TriggerKey" = "";
+          };
+          "rime"."globalSection" = {
+            "SwitchInputMethodBehavior" = "Commit raw input";
           };
         };
         inputMethod = {
@@ -64,7 +79,6 @@ in
           GroupOrder."0" = "Default";
         };
       };
-
     };
   };
 

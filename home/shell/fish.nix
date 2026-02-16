@@ -18,7 +18,7 @@
 
   programs.fish = {
     enable = true;
-    shellInit = pkgs.lib.fileContents ../dotfiles/.config/fish/config.fish;
+    shellInit = pkgs.lib.fileContents ./config.fish;
     plugins = [
       {
         name = "fzf-fish";

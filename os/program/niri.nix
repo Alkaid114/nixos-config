@@ -31,7 +31,6 @@
     nautilus
     adwaita-icon-theme
     gnome-themes-extra
-    hyprpolkitagent
     file-roller
     adwaita-icon-theme
   ];

@@ -5,6 +5,7 @@ in
 {
   stylix.enable = true;
   stylix.autoEnable = true;
+  stylix.targets.console.enable = false;
   stylix.polarity = "dark";
   stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/${theme}.yaml";
   stylix.targets.fontconfig.enable = false;
