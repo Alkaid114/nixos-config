@@ -30,7 +30,20 @@
       shell = "${pkgs.fish}/bin/fish";
     };
     extraConfig = ''
+      # 基础汉字
       symbol_map U+4E00-U+9FFF Noto Sans Mono CJK SC
+
+      # CJK标点符号
+      symbol_map U+3000-U+303F Noto Sans Mono CJK SC
+
+      # 全角ASCII及闭合字母数字
+      symbol_map U+FF00-U+FFEF Noto Sans Mono CJK SC
+
+      # 额外扩展区
+      symbol_map U+20000-U+2A6DF Noto Sans Mono CJK SC
+
+      # emoji
+      symbol_map U+1F300-U+1FAD6 Noto Color Emoji
     '';
   };
 }
