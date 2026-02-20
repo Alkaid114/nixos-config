@@ -12,5 +12,6 @@
     ./steam.nix
     ./fonts.nix
     ./stylix.nix
+    ./plymouth.nix
   ];
 }
