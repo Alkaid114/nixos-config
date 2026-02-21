@@ -1,55 +1,17 @@
+From c23385a496de76978c126e4fd6b0c85413026f5e Mon Sep 17 00:00:00 2001
+From: wrvsrx <wrvsrx@outlook.com>
+Date: Sun, 31 Aug 2025 20:56:13 +0800
+Subject: [PATCH 01/19] pw_utils: create a struct called DmaNegotiationResult
+
+---
+ src/screencasting/pw_utils.rs | 45 +++++++++++++++++++----------------
+ 1 file changed, 25 insertions(+), 20 deletions(-)
+
 diff --git a/src/screencasting/pw_utils.rs b/src/screencasting/pw_utils.rs
-index 2b622db4..bcf2aee0 100644
+index 2b622db4..b8386251 100644
 --- a/src/screencasting/pw_utils.rs
 +++ b/src/screencasting/pw_utils.rs
-@@ -7,9 +7,10 @@ use std::os::fd::{AsFd, AsRawFd, BorrowedFd};
- use std::ptr::NonNull;
- use std::rc::Rc;
- use std::time::Duration;
--use std::{mem, slice};
-+use std::{mem, ptr, slice};
- 
- use anyhow::Context as _;
-+use anyhow::ensure;
- use calloop::timer::{TimeoutAction, Timer};
- use calloop::RegistrationToken;
- use pipewire::context::ContextRc;
-@@ -34,7 +35,7 @@ use pipewire::sys::{pw_buffer, pw_check_library_version, pw_stream_queue_buffer}
- use smithay::backend::allocator::dmabuf::{AsDmabuf, Dmabuf};
- use smithay::backend::allocator::format::FormatSet;
- use smithay::backend::allocator::gbm::{GbmBuffer, GbmBufferFlags, GbmDevice};
--use smithay::backend::allocator::{Format, Fourcc};
-+use smithay::backend::allocator::{Fourcc};
- use smithay::backend::drm::DrmDeviceFd;
- use smithay::backend::renderer::damage::OutputDamageTracker;
- use smithay::backend::renderer::element::utils::{Relocate, RelocateRenderElement};
-@@ -46,6 +47,7 @@ use smithay::output::{Output, OutputModeSource};
- use smithay::reexports::calloop::generic::Generic;
- use smithay::reexports::calloop::{Interest, LoopHandle, Mode, PostAction};
- use smithay::reexports::gbm::Modifier;
-+use smithay::reexports::rustix;
- use smithay::utils::{Logical, Physical, Point, Scale, Size, Transform};
- use zbus::object_server::SignalEmitter;
- 
-@@ -59,6 +61,9 @@ use crate::utils::{get_monotonic_time, CastSessionId, CastStreamId};
- 
- // Give a 0.1 ms allowance for presentation time errors.
- const CAST_DELAY_ALLOWANCE: Duration = Duration::from_micros(100);
-+const SHM_BLOCKS: usize = 1;
-+const SHM_BYTES_PER_PIXEL: usize = 4;
-+
- 
- const CURSOR_FORMAT: spa_video_format = SPA_VIDEO_FORMAT_BGRA;
- const CURSOR_BPP: u32 = 4;
-@@ -112,6 +117,7 @@ struct CastInner {
-     refresh: u32,
-     min_time_between_frames: Duration,
-     dmabufs: HashMap<i64, Dmabuf>,
-+    shmbufs: HashMap<i64, Shmbuf>,
-     /// Buffers dequeued from PipeWire in process of rendering.
-     ///
-     /// This is an ordered list of buffers that we started rendering to and waiting for the
-@@ -121,23 +127,29 @@ struct CastInner {
+@@ -121,6 +121,12 @@ struct CastInner {
      rendering_buffers: Vec<(NonNull<pw_buffer>, SyncPoint)>,
  }
  
@@ -62,212 +24,129 @@ index 2b622db4..bcf2aee0 100644
  #[allow(clippy::large_enum_variant)]
  #[derive(Debug)]
  enum CastState {
-+    // extra_negotiation_result = Some(_) means DMA sharing
-+    // extra_negotiation_result = None    means SHM sharing
-     ResizePending {
-         pending_size: Size<u32, Physical>,
-     },
+@@ -130,14 +136,12 @@ enum CastState {
      ConfirmationPending {
          size: Size<u32, Physical>,
          alpha: bool,
 -        modifier: Modifier,
 -        plane_count: i32,
-+        extra_negotiation_result: Option<DmaNegotiationResult>,
++        extra_negotiation_result: DmaNegotiationResult,
      },
      Ready {
          size: Size<u32, Physical>,
          alpha: bool,
 -        modifier: Modifier,
 -        plane_count: i32,
-+        extra_negotiation_result: Option<DmaNegotiationResult>,
++        extra_negotiation_result: DmaNegotiationResult,
          // Lazily-initialized to keep the initialization to a single place.
          damage_tracker: Option<OutputDamageTracker>,
          cursor_damage_tracker: Option<OutputDamageTracker>,
-@@ -194,27 +206,148 @@ impl<'a, E: Element> CursorData<'a, E> {
-     }
- }
+@@ -483,8 +487,10 @@ impl PipeWire {
+                         *state = CastState::ConfirmationPending {
+                             size: format_size,
+                             alpha: format_has_alpha,
+-                            modifier,
+-                            plane_count: plane_count as i32,
++                            extra_negotiation_result: DmaNegotiationResult {
++                                modifier,
++                                plane_count: plane_count as i32,
++                            },
+                         };
  
--macro_rules! make_params {
--    ($params:ident, $formats:expr, $size:expr, $refresh:expr, $alpha:expr) => {
--        let mut b1 = Vec::new();
--        let mut b2 = Vec::new();
--
--        let o1 = make_video_params($formats, $size, $refresh, false);
--        let pod1 = make_pod(&mut b1, o1);
--
--        let mut p1;
--        let mut p2;
--        $params = if $alpha {
--            let o2 = make_video_params($formats, $size, $refresh, true);
--            p2 = [pod1, make_pod(&mut b2, o2)];
--            &mut p2[..]
-+fn make_video_params(
-+    video_formats: &Vec<VideoFormat>,
-+    modifiers: &Vec<Modifier>,
-+    size: Size<u32, Physical>,
-+    refresh: u32,
-+    fixated: bool,
-+) -> pod::Object {
-+    let modifier_property = if modifiers.len() == 0 {
-+        None
-+    } else {
-+        let dont_fixate = if (!fixated) && modifiers.len() == 1 && modifiers[0] == Modifier::Invalid
-+        {
-+            PropertyFlags::DONT_FIXATE
-         } else {
--            p1 = [pod1];
--            &mut p1[..]
-+            PropertyFlags::empty()
-         };
-+        let flags = PropertyFlags::MANDATORY | dont_fixate;
-+        let modifiers_i64 = modifiers
-+            .iter()
-+            .map(|m| u64::from(*m) as i64)
-+            .collect::<Vec<_>>();
-+        Some(Property {
-+            key: FormatProperties::VideoModifier.as_raw(),
-+            flags,
-+            value: pod::Value::Choice(ChoiceValue::Long(Choice(
-+                        ChoiceFlags::empty(),
-+                        ChoiceEnum::Enum {
-+                            default: modifiers_i64[0],
-+                            alternatives: modifiers_i64,
-+                        },
-+            ))),
-+        })
-     };
-+
-+    pod::Object {
-+        type_: SpaTypes::ObjectParamFormat.as_raw(),
-+        id: ParamType::EnumFormat.as_raw(),
-+        properties: [
-+            vec![
-+                pod::property!(FormatProperties::MediaType, Id, MediaType::Video),
-+                pod::property!(FormatProperties::MediaSubtype, Id, MediaSubtype::Raw),
-+            ],
-+            video_formats
-+                .iter()
-+                .map(|video_format| pod::property!(FormatProperties::VideoFormat, Id, video_format))
-+                .collect(),
-+                match modifier_property {
-+                    Some(prop) => vec![prop],
-+                    None => vec![],
-+                },
-+                vec![
-+                    pod::property!(
-+                        FormatProperties::VideoSize,
-+                        Rectangle,
-+                        Rectangle {
-+                            width: size.w,
-+                            height: size.h,
-+        }
-+                    ),
-+                    pod::property!(
-+                        FormatProperties::VideoFramerate,
-+                        Fraction,
-+                        Fraction { num: 0, denom: 1 }
-+                    ),
-+                    pod::property!(
-+                        FormatProperties::VideoMaxFramerate,
-+                        Choice,
-+                        Range,
-+                        Fraction,
-+                        Fraction {
-+                            num: refresh,
-+                            denom: 1000
-+                        },
-+                        Fraction { num: 1, denom: 1 },
-+                        Fraction {
-+                            num: refresh,
-+                            denom: 1000
-+        }
-+                    ),
-+                    ],
-+                    ]
-+                        .concat(),
-+    }
- }
+                         let fixated_format = FormatSet::from_iter([Format {
+@@ -524,22 +530,20 @@ impl PipeWire {
+                         CastState::ConfirmationPending {
+                             size,
+                             alpha,
+-                            modifier,
+-                            plane_count,
++                            extra_negotiation_result,
+                         }
+                         | CastState::Ready {
+                             size,
+                             alpha,
+-                            modifier,
+-                            plane_count,
++                            extra_negotiation_result,
+                             ..
+                         } if *alpha == format_has_alpha
+-                            && *modifier == Modifier::from(format.modifier()) =>
++                            && extra_negotiation_result.modifier
++                                == Modifier::from(format.modifier()) =>
+                         {
+                             let size = *size;
+                             let alpha = *alpha;
+-                            let modifier = *modifier;
+-                            let plane_count = *plane_count;
++                            let extra_negotiation_result = *extra_negotiation_result;
  
-+/// this function return an extra Vec<u8> to avoid extra allocation when building Pod
-+fn make_video_params_for_initial_negotiation_with_extra_buffer(
-+    possible_modifiers: &FormatSet,
-+    size: Size<u32, Physical>,
-+    refresh: u32,
-+    alpha: bool,
-+) -> Vec<(pod::Object, Vec<u8>)> {
-+    let f = |alpha| {
-+        let video_formats = if alpha {
-+            vec![VideoFormat::BGRA]
-+        } else {
-+            vec![VideoFormat::BGRx]
-+        };
-+
-+        let fourcc = if alpha {
-+            Fourcc::Argb8888
-+        } else {
-+            Fourcc::Xrgb8888
-+        };
-+
-+        let modifiers: Vec<_> = possible_modifiers
-+            .iter()
-+            .filter_map(|f| (f.code == fourcc).then_some(f.modifier))
-+            .collect();
-+
-+        trace!("offering: {modifiers:?}");
-+
-+        if modifiers.len() == 0 {
-+            vec![
-+                (make_video_params(&video_formats, &vec![], size, refresh, false), Vec::new()),
-+            ]
-+        } else {
-+            vec![
-+                (make_video_params(&video_formats, &modifiers, size, refresh, false), Vec::new()),
-+                (make_video_params(&video_formats, &vec![], size, refresh, false), Vec::new()),
-+            ]
-+        }
-+    };
-+    let pod_objects_with_extra_buffer = if alpha {
-+        [f(true), f(false)].concat()
-+    } else {
-+        f(false)
-+    };
-+    pod_objects_with_extra_buffer
-+}
-+
-+macro_rules! make_video_params_for_initial_negotiation_macro {
-+    ($params:ident, $formats:expr, $size:expr, $refresh:expr, $alpha:expr) => {
-+        let mut $params = make_video_params_for_initial_negotiation_with_extra_buffer($formats, $size, $refresh, $alpha);
-+        let $params: Vec<_> = $params
-+            .iter_mut()
-+            .map(|(obj, buf)| make_pod(buf, (*obj).clone()))
-+            .collect();
-+    };
-+}
-+
-+
- impl PipeWire {
-     pub fn new(
-         event_loop: LoopHandle<'static, State>,
-@@ -319,6 +452,7 @@ impl PipeWire {
-             refresh,
-             min_time_between_frames: Duration::ZERO,
-             dmabufs: HashMap::new(),
-+            shmbufs: HashMap::new(),
-             rendering_buffers: Vec::new(),
-         }));
+                             let (damage_tracker, cursor_damage_tracker) =
+                                 if let CastState::Ready {
+@@ -558,14 +562,13 @@ impl PipeWire {
+                             *state = CastState::Ready {
+                                 size,
+                                 alpha,
+-                                modifier,
+-                                plane_count,
++                                extra_negotiation_result,
+                                 damage_tracker,
+                                 cursor_damage_tracker,
+                                 last_cursor_location: None,
+                             };
  
-@@ -433,152 +567,53 @@ impl PipeWire {
+-                            plane_count
++                            extra_negotiation_result.plane_count
+                         }
+                         _ => {
+                             // We're negotiating a single modifier, or alpha or modifier changed,
+@@ -593,8 +596,10 @@ impl PipeWire {
+                             *state = CastState::Ready {
+                                 size: format_size,
+                                 alpha: format_has_alpha,
+-                                modifier,
+-                                plane_count: plane_count as i32,
++                                extra_negotiation_result: DmaNegotiationResult {
++                                    modifier,
++                                    plane_count: plane_count as i32,
++                                },
+                                 damage_tracker: None,
+                                 cursor_damage_tracker: None,
+                                 last_cursor_location: None,
+@@ -684,11 +689,11 @@ impl PipeWire {
+                     let (size, alpha, modifier) = if let CastState::Ready {
+                         size,
+                         alpha,
+-                        modifier,
++                        extra_negotiation_result,
+                         ..
+                     } = &inner.state
+                     {
+-                        (*size, *alpha, *modifier)
++                        (*size, *alpha, extra_negotiation_result.modifier)
+                     } else {
+                         trace!("add_buffer, but not ready yet");
+                         return;
+-- 
+2.53.0
+
+
+From a88a11fca73a05a325103113fc5c815067857580 Mon Sep 17 00:00:00 2001
+From: wrvsrx <wrvsrx@outlook.com>
+Date: Mon, 1 Sep 2025 16:30:43 +0800
+Subject: [PATCH 02/19] pw_utils: add comments about pw negotiating
+
+---
+ src/screencasting/pw_utils.rs | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/src/screencasting/pw_utils.rs b/src/screencasting/pw_utils.rs
+index b8386251..d637da08 100644
+--- a/src/screencasting/pw_utils.rs
++++ b/src/screencasting/pw_utils.rs
+@@ -437,6 +437,22 @@ impl PipeWire {
                      );
                      inner.min_time_between_frames = min_frame_time;
  
--                    let object = pod.as_object().unwrap();
--                    let Some(prop_modifier) =
--                        object.find_prop(spa::utils::Id(FormatProperties::VideoModifier.0))
--                    else {
--                        warn!("modifier prop missing");
--                        stop_cast();
--                        return;
--                    };
 +                    // We have following cases when param_changed:
 +                    //
 +                    // 1. Modifier exists and its flags contain DONT_FIXATE
@@ -282,13 +161,48 @@ index 2b622db4..bcf2aee0 100644
 +                    //
 +                    // 3. Modifier doesn't exist
 +                    //
++                    //    set CastState to Ready and set buffer to SHM.
++
+                     let object = pod.as_object().unwrap();
+                     let Some(prop_modifier) =
+                         object.find_prop(spa::utils::Id(FormatProperties::VideoModifier.0))
+-- 
+2.53.0
+
+
+From 6be7b66e5f902500b2ef5303646d9490ec6c57be Mon Sep 17 00:00:00 2001
+From: wrvsrx <wrvsrx@outlook.com>
+Date: Wed, 18 Feb 2026 03:53:40 +0800
+Subject: [PATCH 03/19] pw_utils: refactor modifier negotiation logic
+
+This commit is preparation for supporting shared memory sharing
+---
+ src/screencasting/pw_utils.rs | 406 +++++++++++++++++-----------------
+ 1 file changed, 202 insertions(+), 204 deletions(-)
+
+diff --git a/src/screencasting/pw_utils.rs b/src/screencasting/pw_utils.rs
+index d637da08..6a681256 100644
+--- a/src/screencasting/pw_utils.rs
++++ b/src/screencasting/pw_utils.rs
+@@ -451,153 +451,38 @@ impl PipeWire {
+                     //
+                     // 3. Modifier doesn't exist
+                     //
+-                    //    set CastState to Ready and set buffer to SHM.
 +                    //    TODO: set CastState to Ready and set buffer to SHM.
  
+                     let object = pod.as_object().unwrap();
+-                    let Some(prop_modifier) =
+-                        object.find_prop(spa::utils::Id(FormatProperties::VideoModifier.0))
+-                    else {
+-                        warn!("modifier prop missing");
+-                        stop_cast();
+-                        return;
+-                    };
+-
 -                    if prop_modifier.flags().contains(PodPropFlags::DONT_FIXATE) {
 -                        debug!("fixating the modifier");
-+                    let object = pod.as_object().unwrap();
-+                    let maybe_prop_modifier = object.find_prop(spa::utils::Id(FormatProperties::VideoModifier.0));
- 
+-
 -                        let pod_modifier = prop_modifier.value();
 -                        let Ok((_, modifiers)) = PodDeserializer::deserialize_from::<Choice<i64>>(
 -                            pod_modifier.as_bytes(),
@@ -297,16 +211,16 @@ index 2b622db4..bcf2aee0 100644
 -                            stop_cast();
 -                            return;
 -                        };
-+                    match maybe_prop_modifier {
-+                        Some(prop_modifier) if prop_modifier.flags().contains(PodPropFlags::DONT_FIXATE) => {
-+                            debug!("fixating the modifier");
  
 -                        let ChoiceEnum::Enum { alternatives, .. } = modifiers.1 else {
 -                            warn!("wrong modifier choice type");
 -                            stop_cast();
 -                            return;
 -                        };
--
++                    match object.find_prop(spa::utils::Id(FormatProperties::VideoModifier.0)) {
++                        Some(prop_modifier) if prop_modifier.flags().contains(PodPropFlags::DONT_FIXATE) => {
++                            debug!("fixating the modifier");
+ 
 -                        let (modifier, plane_count) = match find_preferred_modifier(
 -                            &gbm,
 -                            format_size,
@@ -335,8 +249,10 @@ index 2b622db4..bcf2aee0 100644
 -                        *state = CastState::ConfirmationPending {
 -                            size: format_size,
 -                            alpha: format_has_alpha,
--                            modifier,
--                            plane_count: plane_count as i32,
+-                            extra_negotiation_result: DmaNegotiationResult {
+-                                modifier,
+-                                plane_count: plane_count as i32,
+-                            },
 -                        };
 -
 -                        let fixated_format = FormatSet::from_iter([Format {
@@ -377,22 +293,20 @@ index 2b622db4..bcf2aee0 100644
 -                        CastState::ConfirmationPending {
 -                            size,
 -                            alpha,
--                            modifier,
--                            plane_count,
+-                            extra_negotiation_result,
 -                        }
 -                        | CastState::Ready {
 -                            size,
 -                            alpha,
--                            modifier,
--                            plane_count,
+-                            extra_negotiation_result,
 -                            ..
 -                        } if *alpha == format_has_alpha
--                            && *modifier == Modifier::from(format.modifier()) =>
+-                            && extra_negotiation_result.modifier
+-                                == Modifier::from(format.modifier()) =>
 -                        {
 -                            let size = *size;
 -                            let alpha = *alpha;
--                            let modifier = *modifier;
--                            let plane_count = *plane_count;
+-                            let extra_negotiation_result = *extra_negotiation_result;
 -
 -                            let (damage_tracker, cursor_damage_tracker) =
 -                                if let CastState::Ready {
@@ -411,8 +325,7 @@ index 2b622db4..bcf2aee0 100644
 -                            *state = CastState::Ready {
 -                                size,
 -                                alpha,
--                                modifier,
--                                plane_count,
+-                                extra_negotiation_result,
 -                                damage_tracker,
 -                                cursor_damage_tracker,
 -                                last_cursor_location: None,
@@ -422,7 +335,7 @@ index 2b622db4..bcf2aee0 100644
 +                                return;
                              };
  
--                            plane_count
+-                            extra_negotiation_result.plane_count
 -                        }
 -                        _ => {
 -                            // We're negotiating a single modifier, or alpha or modifier changed,
@@ -441,7 +354,7 @@ index 2b622db4..bcf2aee0 100644
                                      stop_cast();
                                      return;
                                  }
-@@ -587,91 +622,235 @@ impl PipeWire {
+@@ -606,93 +491,206 @@ impl PipeWire {
                              debug!(
                                  "allocation successful \
                                   (modifier={modifier:?}, plane_count={plane_count}), \
@@ -453,24 +366,41 @@ index 2b622db4..bcf2aee0 100644
 +                            *state = CastState::ConfirmationPending {
                                  size: format_size,
                                  alpha: format_has_alpha,
--                                modifier,
--                                plane_count: plane_count as i32,
+                                 extra_negotiation_result: DmaNegotiationResult {
+                                     modifier,
+                                     plane_count: plane_count as i32,
+                                 },
 -                                damage_tracker: None,
 -                                cursor_damage_tracker: None,
 -                                last_cursor_location: None,
-+                                extra_negotiation_result: Some(DmaNegotiationResult {
-+                                    modifier,
-+                                    plane_count: plane_count as i32,
-+                                }),
                              };
  
 -                            plane_count as i32
 -                        }
 -                    };
-+                            let o = make_video_params(&vec![format.format()], &vec![modifier], format_size, refresh, true);
-+                            let mut b = Vec::new();
-+                            let pod = make_pod(&mut b, o);
-+                            let params_1 = vec![pod];
++                            let fixated_format = FormatSet::from_iter([Format {
++                                code: fourcc,
++                                modifier,
++                            }]);
++
++                            let mut b1 = Vec::new();
++                            let mut b2 = Vec::new();
++
++                            let o1 = make_video_params(
++                                &fixated_format,
++                                format_size,
++                                inner.refresh,
++                                format_has_alpha,
++                            );
++                            let pod1 = make_pod(&mut b1, o1);
++
++                            let o2 = make_video_params(
++                                &formats,
++                                format_size,
++                                inner.refresh,
++                                format_has_alpha,
++                            );
++                            let mut params = [pod1, make_pod(&mut b2, o2)];
  
 -                    // const BPP: u32 = 4;
 -                    // let stride = format.size().width * BPP;
@@ -487,7 +417,19 @@ index 2b622db4..bcf2aee0 100644
 -                                    default: 8,
 -                                    min: 2,
 -                                    max: 16
--                                }
++                            if let Err(err) = stream.update_params(&mut params) {
++                                warn!("error updating stream params: {err:?}");
++                                stop_cast();
++                            }
++                        }
++                        Some(_) => {
++                            // Verify that alpha and modifier didn't change.
++                            let plane_count = match &*state {
++                                CastState::ConfirmationPending {
++                                    size,
++                                    alpha,
++                                    extra_negotiation_result,
+                                 }
 -                            ))),
 -                        ),
 -                        Property::new(SPA_PARAM_BUFFERS_blocks, pod::Value::Int(plane_count)),
@@ -498,177 +440,86 @@ index 2b622db4..bcf2aee0 100644
 -                                ChoiceEnum::Flags {
 -                                    default: 1 << DataType::DmaBuf.as_raw(),
 -                                    flags: vec![1 << DataType::DmaBuf.as_raw()],
-+                            make_video_params_for_initial_negotiation_macro!(params_2, &formats, format_size, refresh, format_has_alpha);
-+
-+                            let params = [params_1, params_2].concat();
-+
-+                            if let Err(err) = stream.update_params(params.clone().as_mut_slice()) {
-+                                warn!("error updating stream params: {err:?}");
-+                                stop_cast();
-+                            }
-+                        }
-+                        _ => {
-+                            let o1 = match maybe_prop_modifier {
-+                                Some(_) => {
-+                                    // Verify that alpha and modifier didn't change.
-+                                    let plane_count = match &*state {
-+                                        CastState::ConfirmationPending {
-+                                            size,
-+                                            alpha,
-+                                            extra_negotiation_result,
-+                                        }
-+                                        | CastState::Ready {
-+                                            size,
-+                                            alpha,
-+                                            extra_negotiation_result,
-+                                            ..
-+                                        } if *alpha == format_has_alpha
-+                                            && matches!(
-+                                                extra_negotiation_result, 
-+                                                Some(x) if x.modifier == Modifier::from(format.modifier())
-+                                            ) =>
-+                                        {
-+                                            let size = *size;
-+                                            let alpha = *alpha;
-+                                            let extra_negotiation_result = *extra_negotiation_result;
-+
-+                                            let (damage_tracker, cursor_damage_tracker) =
-+                                                if let CastState::Ready {
-+                                                    damage_tracker,
-+                                                    cursor_damage_tracker,
-+                                                    ..
-+                                                } = &mut *state
-+                                                {
-+                                                    (damage_tracker.take(), cursor_damage_tracker.take())
-+                                                } else {
-+                                                    (None, None)
-+                                                };
-+
-+                                            debug!("moving to ready state");
-+
-+                                            *state = CastState::Ready {
-+                                                size,
-+                                                alpha,
-+                                                extra_negotiation_result,
-+                                                damage_tracker,
-+                                                cursor_damage_tracker,
-+                                                last_cursor_location: None,
-+                                            };
-+
-+                                            extra_negotiation_result.unwrap().plane_count
-+                                        }
-+                                        _ => {
-+                                            // We're negotiating a single modifier, or alpha or modifier changed,
-+                                            // so we need to do a test allocation.
-+                                            let (modifier, plane_count) = match find_preferred_modifier(
-+                                                &gbm,
-+                                                format_size,
-+                                                fourcc,
-+                                                vec![format.modifier() as i64],
-+                                            ) {
-+                                                Ok(x) => x,
-+                                                Err(err) => {
-+                                                    warn!("test allocation failed: {err:?}");
-+                                                    stop_cast();
-+                                                    return;
-+                                                }
-+                                            };
-+
-+                                            debug!(
-+                                                "allocation successful \
-+                                                 (modifier={modifier:?}, plane_count={plane_count}), \
-+                                                 moving to ready"
-+                                            );
-+
-+                                            *state = CastState::Ready {
-+                                                size: format_size,
-+                                                alpha: format_has_alpha,
-+                                                extra_negotiation_result: Some(DmaNegotiationResult {
-+                                                    modifier,
-+                                                    plane_count: plane_count as i32,
-+                                                }),
-+                                                damage_tracker: None,
-+                                                cursor_damage_tracker: None,
-+                                                last_cursor_location: None,
-+                                            };
-+
-+                                            plane_count as i32
-+                                        }
-+
-+                                    };
-+                                    // const BPP: u32 = 4;
-+                                    // let stride = format.size().width * BPP;
-+                                    // let size = stride * format.size().height;
-+
-+                                    pod::object!(
-+                                        SpaTypes::ObjectParamBuffers,
-+                                        ParamType::Buffers,
-+                                        Property::new(
-+                                            SPA_PARAM_BUFFERS_buffers,
-+                                            pod::Value::Choice(ChoiceValue::Int(Choice(
-+                                                ChoiceFlags::empty(),
-+                                                ChoiceEnum::Range {
-+                                                    default: 8,
-+                                                    min: 2,
-+                                                    max: 16
-+                                                }
-+                                            ))),
-+                                        ),
-+                                        Property::new(SPA_PARAM_BUFFERS_blocks, pod::Value::Int(plane_count)),
-+                                        Property::new(
-+                                            SPA_PARAM_BUFFERS_dataType,
-+                                            pod::Value::Choice(ChoiceValue::Int(Choice(
-+                                                ChoiceFlags::empty(),
-+                                                ChoiceEnum::Flags {
-+                                                    default: 1 << DataType::DmaBuf.as_raw(),
-+                                                    flags: vec![1 << DataType::DmaBuf.as_raw()],
-+                                                },
-+                                            ))),
-+                                        ),
-+                                    )
-                                 },
+-                                },
 -                            ))),
 -                        ),
 -                    );
-+                                None => {
++                                | CastState::Ready {
++                                    size,
++                                    alpha,
++                                    extra_negotiation_result,
++                                    ..
++                                } if *alpha == format_has_alpha
++                                    && extra_negotiation_result.modifier
++                                        == Modifier::from(format.modifier()) =>
++                                {
++                                    let size = *size;
++                                    let alpha = *alpha;
++                                    let extra_negotiation_result = *extra_negotiation_result;
++
++                                    let (damage_tracker, cursor_damage_tracker) =
++                                        if let CastState::Ready {
++                                            damage_tracker,
++                                            cursor_damage_tracker,
++                                            ..
++                                        } = &mut *state
++                                        {
++                                            (damage_tracker.take(), cursor_damage_tracker.take())
++                                        } else {
++                                            (None, None)
++                                        };
++
++                                    debug!("moving to ready state");
++
++                                    *state = CastState::Ready {
++                                        size,
++                                        alpha,
++                                        extra_negotiation_result,
++                                        damage_tracker,
++                                        cursor_damage_tracker,
++                                        last_cursor_location: None,
++                                    };
++
++                                    extra_negotiation_result.plane_count
++                                }
++                                _ => {
++                                    // We're negotiating a single modifier, or alpha or modifier changed,
++                                    // so we need to do a test allocation.
++                                    let (modifier, plane_count) = match find_preferred_modifier(
++                                        &gbm,
++                                        format_size,
++                                        fourcc,
++                                        vec![format.modifier() as i64],
++                                    ) {
++                                        Ok(x) => x,
++                                        Err(err) => {
++                                            warn!("test allocation failed: {err:?}");
++                                            stop_cast();
++                                            return;
++                                        }
++                                    };
++
++                                    debug!(
++                                        "allocation successful \
++                                         (modifier={modifier:?}, plane_count={plane_count}), \
++                                         moving to ready"
++                                    );
++
 +                                    *state = CastState::Ready {
 +                                        size: format_size,
 +                                        alpha: format_has_alpha,
-+                                        extra_negotiation_result: None,
++                                        extra_negotiation_result: DmaNegotiationResult {
++                                            modifier,
++                                            plane_count: plane_count as i32,
++                                        },
 +                                        damage_tracker: None,
 +                                        cursor_damage_tracker: None,
 +                                        last_cursor_location: None,
 +                                    };
-+                                    pod::object!(
-+                                        SpaTypes::ObjectParamBuffers,
-+                                        ParamType::Buffers,
-+                                        Property::new(
-+                                            SPA_PARAM_BUFFERS_buffers,
-+                                            pod::Value::Choice(ChoiceValue::Int(Choice(
-+                                                        ChoiceFlags::empty(),
-+                                                        ChoiceEnum::Range {
-+                                                            default: 16,
-+                                                            min: 2,
-+                                                            max: 16
-+                                                        }
-+                                            ))),
-+                                        ),
-+                                        Property::new(
-+                                            SPA_PARAM_BUFFERS_blocks,
-+                                            pod::Value::Int(SHM_BLOCKS as i32),
-+                                        ),
-+                                        Property::new(
-+                                            SPA_PARAM_BUFFERS_dataType,
-+                                            pod::Value::Choice(ChoiceValue::Int(Choice(
-+                                                        ChoiceFlags::empty(),
-+                                                        ChoiceEnum::Flags {
-+                                                            default: 1 << DataType::MemFd.as_raw(),
-+                                                            flags: vec![1 << DataType::MemFd.as_raw()],
-+                                                        },
-+                                            ))),
-+                                        ),
-+                                    )
++
++                                    plane_count as i32
 +                                }
++                            };
  
 -                    let o2 = pod::object!(
 -                        SpaTypes::ObjectParamMeta,
@@ -702,7 +553,41 @@ index 2b622db4..bcf2aee0 100644
 -                        );
 -                        params.push(make_pod(&mut b_cursor, o_cursor));
 -                    }
-+                            };
++                            // const BPP: u32 = 4;
++                            // let stride = format.size().width * BPP;
++                            // let size = stride * format.size().height;
++
++                            let o1 = pod::object!(
++                                SpaTypes::ObjectParamBuffers,
++                                ParamType::Buffers,
++                                Property::new(
++                                    SPA_PARAM_BUFFERS_buffers,
++                                    pod::Value::Choice(ChoiceValue::Int(Choice(
++                                        ChoiceFlags::empty(),
++                                        ChoiceEnum::Range {
++                                            default: 8,
++                                            min: 2,
++                                            max: 16
++                                        }
++                                    ))),
++                                ),
++                                Property::new(SPA_PARAM_BUFFERS_blocks, pod::Value::Int(plane_count)),
++                                Property::new(
++                                    SPA_PARAM_BUFFERS_dataType,
++                                    pod::Value::Choice(ChoiceValue::Int(Choice(
++                                        ChoiceFlags::empty(),
++                                        ChoiceEnum::Flags {
++                                            default: 1 << DataType::DmaBuf.as_raw(),
++                                            flags: vec![1 << DataType::DmaBuf.as_raw()],
++                                        },
++                                    ))),
++                                ),
++                            );
+ 
+-                    if let Err(err) = stream.update_params(&mut params) {
+-                        warn!("error updating stream params: {err:?}");
+-                        stop_cast();
+-                    }
 +                            let o2 = pod::object!(
 +                                SpaTypes::ObjectParamMeta,
 +                                ParamType::Meta,
@@ -715,14 +600,8 @@ index 2b622db4..bcf2aee0 100644
 +                                    pod::Value::Int(size_of::<spa_meta_header>() as i32)
 +                                ),
 +                            );
- 
--                    if let Err(err) = stream.update_params(&mut params) {
--                        warn!("error updating stream params: {err:?}");
--                        stop_cast();
--                    }
 +                            let mut b1 = vec![];
 +                            let mut b2 = vec![];
-+
 +                            let mut params = vec![make_pod(&mut b1, o1), make_pod(&mut b2, o2)];
 +
 +                            let mut b_cursor = vec![];
@@ -746,39 +625,113 @@ index 2b622db4..bcf2aee0 100644
 +                                warn!("error updating stream params: {err:?}");
 +                                stop_cast();
 +                            }
-+
++                        }
++                        None => {
++                            warn!("pw stream: modifier prop missing and we don't support shared memory sharing currently");
++                            stop_cast();
 +                        }
 +                    };
                  }
              })
              .add_buffer({
-@@ -681,77 +860,107 @@ impl PipeWire {
+-- 
+2.53.0
+
+
+From c74b4e9b658ab4deb119fe54afded026ee4b4589 Mon Sep 17 00:00:00 2001
+From: wrvsrx <wrvsrx@outlook.com>
+Date: Wed, 18 Feb 2026 04:04:01 +0800
+Subject: [PATCH 04/19] pw_utils: change type of `extra_negotiation_result` to
+ `Option<DmaNegotiationResult>`
+
+This commit is preparation for supporting shared memory sharing
+---
+ src/screencasting/pw_utils.rs | 155 ++++++++++++++++++----------------
+ 1 file changed, 81 insertions(+), 74 deletions(-)
+
+diff --git a/src/screencasting/pw_utils.rs b/src/screencasting/pw_utils.rs
+index 6a681256..469249cb 100644
+--- a/src/screencasting/pw_utils.rs
++++ b/src/screencasting/pw_utils.rs
+@@ -136,12 +136,12 @@ enum CastState {
+     ConfirmationPending {
+         size: Size<u32, Physical>,
+         alpha: bool,
+-        extra_negotiation_result: DmaNegotiationResult,
++        extra_negotiation_result: Option<DmaNegotiationResult>,
+     },
+     Ready {
+         size: Size<u32, Physical>,
+         alpha: bool,
+-        extra_negotiation_result: DmaNegotiationResult,
++        extra_negotiation_result: Option<DmaNegotiationResult>,
+         // Lazily-initialized to keep the initialization to a single place.
+         damage_tracker: Option<OutputDamageTracker>,
+         cursor_damage_tracker: Option<OutputDamageTracker>,
+@@ -497,10 +497,10 @@ impl PipeWire {
+                             *state = CastState::ConfirmationPending {
+                                 size: format_size,
+                                 alpha: format_has_alpha,
+-                                extra_negotiation_result: DmaNegotiationResult {
++                                extra_negotiation_result: Some(DmaNegotiationResult {
+                                     modifier,
+                                     plane_count: plane_count as i32,
+-                                },
++                                }),
+                             };
+ 
+                             let fixated_format = FormatSet::from_iter([Format {
+@@ -546,8 +546,10 @@ impl PipeWire {
+                                     extra_negotiation_result,
+                                     ..
+                                 } if *alpha == format_has_alpha
+-                                    && extra_negotiation_result.modifier
+-                                        == Modifier::from(format.modifier()) =>
++                                    && matches!(
++                                        extra_negotiation_result, 
++                                        Some(x) if x.modifier == Modifier::from(format.modifier())
++                                    ) =>
+                                 {
+                                     let size = *size;
+                                     let alpha = *alpha;
+@@ -576,7 +578,7 @@ impl PipeWire {
+                                         last_cursor_location: None,
+                                     };
+ 
+-                                    extra_negotiation_result.plane_count
++                                    extra_negotiation_result.unwrap().plane_count
+                                 }
+                                 _ => {
+                                     // We're negotiating a single modifier, or alpha or modifier changed,
+@@ -604,10 +606,10 @@ impl PipeWire {
+                                     *state = CastState::Ready {
+                                         size: format_size,
+                                         alpha: format_has_alpha,
+-                                        extra_negotiation_result: DmaNegotiationResult {
++                                        extra_negotiation_result: Some(DmaNegotiationResult {
+                                             modifier,
+                                             plane_count: plane_count as i32,
+-                                        },
++                                        }),
+                                         damage_tracker: None,
+                                         cursor_damage_tracker: None,
+                                         last_cursor_location: None,
+@@ -700,77 +702,82 @@ impl PipeWire {
                      let _span = debug_span!("add_buffer", %stream_id).entered();
                      let mut inner = inner.borrow_mut();
  
 -                    let (size, alpha, modifier) = if let CastState::Ready {
 -                        size,
 -                        alpha,
--                        modifier,
+-                        extra_negotiation_result,
 -                        ..
 -                    } = &inner.state
 -                    {
--                        (*size, *alpha, *modifier)
+-                        (*size, *alpha, extra_negotiation_result.modifier)
 -                    } else {
 -                        trace!("add_buffer, but not ready yet");
 -                        return;
 -                    };
--
--                    trace!("size={size:?}, alpha={alpha}, modifier={modifier:?}");
--
--                    unsafe {
--                        let spa_buffer = (*buffer).buffer;
--
--                        let fourcc = if alpha {
--                            Fourcc::Argb8888
--                        } else {
--                            Fourcc::Xrgb8888
--                        };
 +                    match inner.state {
 +                        CastState::Ready {
 +                            size,
@@ -788,7 +741,7 @@ index 2b622db4..bcf2aee0 100644
 +                        } => {
 +                            match extra_negotiation_result {
 +                                Some(DmaNegotiationResult { modifier, .. }) => {
-+                                    trace!("pw stream: add_buffer (dma), size={size:?}, alpha={alpha}, modifier={modifier:?}");
++                                    trace!("size={size:?}, alpha={alpha}, modifier={modifier:?}");
 +                                    unsafe {
 +                                        let spa_buffer = (*buffer).buffer;
 +
@@ -797,7 +750,8 @@ index 2b622db4..bcf2aee0 100644
 +                                        } else {
 +                                            Fourcc::Xrgb8888
 +                                        };
-+
+ 
+-                    trace!("size={size:?}, alpha={alpha}, modifier={modifier:?}");
 +                                        let dmabuf = match allocate_dmabuf(&gbm, size, fourcc, modifier) {
 +                                            Ok(dmabuf) => dmabuf,
 +                                            Err(err) => {
@@ -806,10 +760,17 @@ index 2b622db4..bcf2aee0 100644
 +                                                return;
 +                                            }
 +                                        };
-+
+ 
+-                    unsafe {
+-                        let spa_buffer = (*buffer).buffer;
 +                                        let plane_count = dmabuf.num_planes();
 +                                        assert_eq!((*spa_buffer).n_datas as usize, plane_count);
-+
+ 
+-                        let fourcc = if alpha {
+-                            Fourcc::Argb8888
+-                        } else {
+-                            Fourcc::Xrgb8888
+-                        };
 +                                        for (i, (fd, (stride, offset))) in
 +                                            zip(dmabuf.handles(), zip(dmabuf.strides(), dmabuf.offsets()))
 +                                                .enumerate()
@@ -836,10 +797,6 @@ index 2b622db4..bcf2aee0 100644
 +                                                (*spa_data).fd
 +                                            );
 +                                        }
-+
-+                                        let fd = (*(*spa_buffer).datas).fd;
-+                                        assert!(inner.dmabufs.insert(fd, dmabuf).is_none());
-+                                    }
  
 -                        let dmabuf = match allocate_dmabuf(&gbm, size, fourcc, modifier) {
 -                            Ok(dmabuf) => dmabuf,
@@ -847,6 +804,10 @@ index 2b622db4..bcf2aee0 100644
 -                                warn!("error allocating dmabuf: {err:?}");
 -                                stop_cast();
 -                                return;
++                                        let fd = (*(*spa_buffer).datas).fd;
++                                        assert!(inner.dmabufs.insert(fd, dmabuf).is_none());
++                                    }
++
 +                                    // During size re-negotiation, the stream sometimes just keeps running, in
 +                                    // which case we may need to force a redraw once we got a newly sized buffer.
 +                                    if inner.dmabufs.len() == 1 && stream.state() == StreamState::Streaming {
@@ -854,32 +815,7 @@ index 2b622db4..bcf2aee0 100644
 +                                    }
 +                                },
 +                                None => {
-+                                    trace!("pw stream: add_buffer (shm), size={size:?}, alpha={alpha}");
-+                                    unsafe {
-+                                        let spa_buffer = (*buffer).buffer;
-+
-+                                        let shmbuf = match allocate_shmbuf(size) {
-+                                            Ok(x) => x,
-+                                            Err(err) => {
-+                                                warn!("error allocating shmbuf: {err:?}");
-+                                                stop_cast();
-+                                                return;
-+                                            }
-+                                        };
-+
-+                                        assert_eq!((*spa_buffer).n_datas as usize, SHM_BLOCKS);
-+
-+                                        let spa_data = (*spa_buffer).datas;
-+                                        assert!((*spa_data).type_ & (1 << DataType::MemFd.as_raw()) > 0);
-+
-+                                        (*spa_data).type_ = DataType::MemFd.as_raw();
-+                                        (*spa_data).maxsize = shmbuf.size as u32;
-+                                        (*spa_data).fd = shmbuf.fd.as_raw_fd() as i64;
-+                                        (*spa_data).flags = SPA_DATA_FLAG_READWRITE;
-+
-+                                        let fd = (*(*spa_buffer).datas).fd;
-+                                        assert!(inner.shmbufs.insert(fd, shmbuf).is_none());
-+                                    }
++                                    warn!("pw stream: shared memory sharing hasn't been implemented")
 +                                }
                              }
 -                        };
@@ -928,32 +864,270 @@ index 2b622db4..bcf2aee0 100644
                      }
                  }
              })
-@@ -768,10 +977,21 @@ impl PipeWire {
-                     unsafe {
-                         let spa_buffer = (*buffer).buffer;
-                         let spa_data = (*spa_buffer).datas;
--                        assert!((*spa_buffer).n_datas > 0);
+-- 
+2.53.0
+
+
+From 710c73ea32d119dfd0cfd08026d26f4e2bfd39ff Mon Sep 17 00:00:00 2001
+From: wrvsrx <wrvsrx@outlook.com>
+Date: Tue, 2 Sep 2025 00:24:23 +0800
+Subject: [PATCH 05/19] pw_utils: add some comments about
+ `extra_negotiation_result`
+
+---
+ src/screencasting/pw_utils.rs | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/src/screencasting/pw_utils.rs b/src/screencasting/pw_utils.rs
+index 469249cb..126e7626 100644
+--- a/src/screencasting/pw_utils.rs
++++ b/src/screencasting/pw_utils.rs
+@@ -130,6 +130,8 @@ struct DmaNegotiationResult {
+ #[allow(clippy::large_enum_variant)]
+ #[derive(Debug)]
+ enum CastState {
++    // extra_negotiation_result = Some(_) means DMA sharing
++    // extra_negotiation_result = None    means SHM sharing
+     ResizePending {
+         pending_size: Size<u32, Physical>,
+     },
+-- 
+2.53.0
+
+
+From a299fd806f9d47f0c999109b06f2c29cd61f1eff Mon Sep 17 00:00:00 2001
+From: wrvsrx <wrvsrx@outlook.com>
+Date: Wed, 18 Feb 2026 04:14:15 +0800
+Subject: [PATCH 06/19] pw_utils: support sending SHM sharing as fallback when
+ first negotiating
+
+---
+ src/screencasting/pw_utils.rs | 289 ++++++++++++++++++----------------
+ 1 file changed, 156 insertions(+), 133 deletions(-)
+
+diff --git a/src/screencasting/pw_utils.rs b/src/screencasting/pw_utils.rs
+index 126e7626..313a9dce 100644
+--- a/src/screencasting/pw_utils.rs
++++ b/src/screencasting/pw_utils.rs
+@@ -34,7 +34,7 @@ use pipewire::sys::{pw_buffer, pw_check_library_version, pw_stream_queue_buffer}
+ use smithay::backend::allocator::dmabuf::{AsDmabuf, Dmabuf};
+ use smithay::backend::allocator::format::FormatSet;
+ use smithay::backend::allocator::gbm::{GbmBuffer, GbmBufferFlags, GbmDevice};
+-use smithay::backend::allocator::{Format, Fourcc};
++use smithay::backend::allocator::{Fourcc};
+ use smithay::backend::drm::DrmDeviceFd;
+ use smithay::backend::renderer::damage::OutputDamageTracker;
+ use smithay::backend::renderer::element::utils::{Relocate, RelocateRenderElement};
+@@ -200,27 +200,153 @@ impl<'a, E: Element> CursorData<'a, E> {
+     }
+ }
  
--                        let fd = (*spa_data).fd;
--                        inner.dmabufs.remove(&fd);
-+                        if (*spa_data).type_ == DataType::DmaBuf.as_raw() {
-+                            trace!("pw stream: remove_buffer (dma)");
-+                            assert!((*spa_buffer).n_datas > 0);
+-macro_rules! make_params {
+-    ($params:ident, $formats:expr, $size:expr, $refresh:expr, $alpha:expr) => {
+-        let mut b1 = Vec::new();
+-        let mut b2 = Vec::new();
+-
+-        let o1 = make_video_params($formats, $size, $refresh, false);
+-        let pod1 = make_pod(&mut b1, o1);
+-
+-        let mut p1;
+-        let mut p2;
+-        $params = if $alpha {
+-            let o2 = make_video_params($formats, $size, $refresh, true);
+-            p2 = [pod1, make_pod(&mut b2, o2)];
+-            &mut p2[..]
++fn make_video_params(
++    video_formats: &Vec<VideoFormat>,
++    modifiers: &Vec<Modifier>,
++    size: Size<u32, Physical>,
++    refresh: u32,
++    fixated: bool,
++) -> pod::Object {
++    let modifier_property = if modifiers.len() == 0 {
++        None
++    } else {
++        let dont_fixate = if (!fixated) && modifiers.len() == 1 && modifiers[0] == Modifier::Invalid
++        {
++            PropertyFlags::DONT_FIXATE
++        } else {
++            PropertyFlags::empty()
++        };
++        let flags = PropertyFlags::MANDATORY | dont_fixate;
++        let modifiers_i64 = modifiers
++            .iter()
++            .map(|m| u64::from(*m) as i64)
++            .collect::<Vec<_>>();
++        Some(Property {
++            key: FormatProperties::VideoModifier.as_raw(),
++            flags,
++            value: pod::Value::Choice(ChoiceValue::Long(Choice(
++                        ChoiceFlags::empty(),
++                        ChoiceEnum::Enum {
++                            default: modifiers_i64[0],
++                            alternatives: modifiers_i64,
++                        },
++            ))),
++        })
++    };
 +
-+                            let fd = (*spa_data).fd;
-+                            inner.dmabufs.remove(&fd);
-+                        } else if (*spa_data).type_ == DataType::MemFd.as_raw() {
-+                            trace!("pw stream: remove_buffer (shm)");
-+                            assert_eq!((*spa_buffer).n_datas, SHM_BLOCKS as u32);
-+                            let fd = (*spa_data).fd;
-+                            inner.shmbufs.remove(&fd);
-+                        } else {
-+                            warn!("pw stream: remove_buffer (unknown), impossible case happens, {:?}", (*spa_data).type_);
-+                        }
-                     }
-                 }
-             })
-@@ -783,14 +1003,13 @@ impl PipeWire {
++    pipewire::spa::pod::Object {
++        type_: SpaTypes::ObjectParamFormat.as_raw(),
++        id: ParamType::EnumFormat.as_raw(),
++        properties: [
++            vec![
++                pod::property!(FormatProperties::MediaType, Id, MediaType::Video),
++                pod::property!(FormatProperties::MediaSubtype, Id, MediaSubtype::Raw),
++            ],
++            video_formats
++                .iter()
++                .map(|video_format| pod::property!(FormatProperties::VideoFormat, Id, video_format))
++                .collect(),
++                match modifier_property {
++                    Some(prop) => vec![prop],
++                    None => vec![],
++                },
++                vec![
++                    pod::property!(
++                        FormatProperties::VideoSize,
++                        Rectangle,
++                        Rectangle {
++                            width: size.w,
++                            height: size.h,
++        }
++                    ),
++                    pod::property!(
++                        FormatProperties::VideoFramerate,
++                        Fraction,
++                        Fraction { num: 0, denom: 1 }
++                    ),
++                    pod::property!(
++                        FormatProperties::VideoMaxFramerate,
++                        Choice,
++                        Range,
++                        Fraction,
++                        Fraction {
++                            num: refresh,
++                            denom: 1000
++                        },
++                        Fraction { num: 1, denom: 1 },
++                        Fraction {
++                            num: refresh,
++                            denom: 1000
++        }
++                    ),
++                    ],
++                    ]
++                        .concat(),
++    }
++}
++
++fn make_video_params_for_initial_negotiation(
++    possible_modifiers: &FormatSet,
++    size: Size<u32, Physical>,
++    refresh: u32,
++    alpha: bool,
++) -> Vec<pod::Object> {
++    let f = |alpha_| {
++        let video_formats = if alpha_ {
++            vec![VideoFormat::BGRA]
++        } else {
++            vec![VideoFormat::BGRx]
++        };
++
++        let fourcc = if alpha_ {
++            Fourcc::Argb8888
+         } else {
+-            p1 = [pod1];
+-            &mut p1[..]
++            Fourcc::Xrgb8888
+         };
++
++        let modifiers: Vec<_> = possible_modifiers
++            .iter()
++            .filter_map(|f| (f.code == fourcc).then_some(f.modifier))
++            .collect();
++
++        trace!("offering: {modifiers:?}");
++
++        if modifiers.len() == 0 {
++            vec![make_video_params(
++                &video_formats,
++                &vec![],
++                size,
++                refresh,
++                false,
++            )]
++        } else {
++            vec![
++                make_video_params(&video_formats, &modifiers, size, refresh, false),
++                make_video_params(&video_formats, &vec![], size, refresh, false),
++            ]
++        }
++    };
++    let pod_objects = if alpha {
++        [f(true), f(false)].concat()
++    } else {
++        f(false)
++    };
++    pod_objects
++}
++
++macro_rules! make_video_params_for_initial_negotiation_macro {
++    ($params:ident, $formats:expr, $size:expr, $refresh:expr, $alpha:expr) => {
++        let $params = make_video_params_for_initial_negotiation($formats, $size, $refresh, $alpha);
++        let mut obj_with_buffer: Vec<(&pod::Object, Vec<u8>)> =
++            $params.iter().map(|obj| (obj, Vec::new())).collect();
++        let $params: Vec<_> = obj_with_buffer
++            .iter_mut()
++            .map(|(obj, buf)| make_pod(buf, (*obj).clone()))
++            .collect();
+     };
+ }
+ 
++
+ impl PipeWire {
+     pub fn new(
+         event_loop: LoopHandle<'static, State>,
+@@ -505,31 +631,16 @@ impl PipeWire {
+                                 }),
+                             };
+ 
+-                            let fixated_format = FormatSet::from_iter([Format {
+-                                code: fourcc,
+-                                modifier,
+-                            }]);
+-
+-                            let mut b1 = Vec::new();
+-                            let mut b2 = Vec::new();
++                            let o = make_video_params(&vec![format.format()], &vec![modifier], format_size, refresh, true);
++                            let mut b = Vec::new();
++                            let pod = make_pod(&mut b, o);
++                            let params_1 = vec![pod];
+ 
+-                            let o1 = make_video_params(
+-                                &fixated_format,
+-                                format_size,
+-                                inner.refresh,
+-                                format_has_alpha,
+-                            );
+-                            let pod1 = make_pod(&mut b1, o1);
++                            make_video_params_for_initial_negotiation_macro!(params_2, &formats, format_size, refresh, format_has_alpha);
+ 
+-                            let o2 = make_video_params(
+-                                &formats,
+-                                format_size,
+-                                inner.refresh,
+-                                format_has_alpha,
+-                            );
+-                            let mut params = [pod1, make_pod(&mut b2, o2)];
++                            let params = [params_1, params_2].concat();
+ 
+-                            if let Err(err) = stream.update_params(&mut params) {
++                            if let Err(err) = stream.update_params(params.clone().as_mut_slice()) {
+                                 warn!("error updating stream params: {err:?}");
+                                 stop_cast();
+                             }
+@@ -811,14 +922,13 @@ impl PipeWire {
              "starting pw stream with size={pending_size:?}, refresh={refresh:?}"
          );
  
@@ -970,7 +1144,7 @@ index 2b622db4..bcf2aee0 100644
              )
              .context("error connecting stream")?;
  
-@@ -845,16 +1064,9 @@ impl Cast {
+@@ -873,16 +983,9 @@ impl Cast {
              pending_size: new_size,
          };
  
@@ -989,7 +1163,7 @@ index 2b622db4..bcf2aee0 100644
              .context("error updating stream params")?;
  
          Ok(CastSizeChange::Pending)
-@@ -872,10 +1084,9 @@ impl Cast {
+@@ -900,10 +1003,9 @@ impl Cast {
          inner.refresh = refresh;
  
          let size = inner.state.expected_format_size();
@@ -1002,339 +1176,7 @@ index 2b622db4..bcf2aee0 100644
              .context("error updating stream params")?;
  
          Ok(())
-@@ -1059,104 +1270,164 @@ impl Cast {
-     ) -> bool {
-         let mut inner = self.inner.borrow_mut();
- 
--        let CastState::Ready {
-+        if let CastState::Ready {
-             damage_tracker,
-             cursor_damage_tracker,
-             last_cursor_location,
-+            extra_negotiation_result,
-+            alpha,
-             ..
--        } = &mut inner.state
--        else {
--            error!("cast must be in Ready state to render");
--            return false;
--        };
--        let damage_tracker = damage_tracker
--            .get_or_insert_with(|| OutputDamageTracker::new(size, scale, Transform::Normal));
--        let cursor_damage_tracker = cursor_damage_tracker.get_or_insert_with(|| {
--            OutputDamageTracker::new(
--                Size::from((CURSOR_WIDTH as _, CURSOR_HEIGHT as _)),
--                scale,
--                Transform::Normal,
--            )
--        });
-+        } = &mut inner.state {
-+            let damage_tracker = damage_tracker
-+                .get_or_insert_with(|| OutputDamageTracker::new(size, scale, Transform::Normal));
-+            let cursor_damage_tracker = cursor_damage_tracker.get_or_insert_with(|| {
-+                OutputDamageTracker::new(
-+                    Size::from((CURSOR_WIDTH as _, CURSOR_HEIGHT as _)),
-+                    scale,
-+                    Transform::Normal,
-+                )
-+            });
-+            let extra_negotiation_result = extra_negotiation_result.clone();
-+            let alpha = alpha.clone();
-+
-+            // Size change will drop the damage tracker, but scale change won't, so check it here.
-+            let OutputModeSource::Static { scale: t_scale, .. } = damage_tracker.mode() else {
-+                unreachable!();
-+            };
-+            if *t_scale != scale {
-+                *damage_tracker = OutputDamageTracker::new(size, scale, Transform::Normal);
-+                *cursor_damage_tracker = OutputDamageTracker::new(
-+                    Size::from((CURSOR_WIDTH as _, CURSOR_HEIGHT as _)),
-+                    scale,
-+                    Transform::Normal,
-+                );
-+            }
- 
--        // Size change will drop the damage tracker, but scale change won't, so check it here.
--        let OutputModeSource::Static { scale: t_scale, .. } = damage_tracker.mode() else {
--            unreachable!();
--        };
--        if *t_scale != scale {
--            *damage_tracker = OutputDamageTracker::new(size, scale, Transform::Normal);
--            *cursor_damage_tracker = OutputDamageTracker::new(
--                Size::from((CURSOR_WIDTH as _, CURSOR_HEIGHT as _)),
--                scale,
--                Transform::Normal,
--            );
--        }
-+            let (damage, _states) = damage_tracker.damage_output(1, elements).unwrap();
- 
--        let (damage, _states) = damage_tracker.damage_output(1, elements).unwrap();
--
--        let mut has_cursor_update = false;
--        let mut redraw_cursor = false;
--        if self.cursor_mode != CursorMode::Hidden {
--            let (damage, _states) = cursor_damage_tracker
--                .damage_output(1, &cursor_data.relocated)
--                .unwrap();
--            redraw_cursor = damage.is_some();
--            has_cursor_update =
--                redraw_cursor || *last_cursor_location != Some(cursor_data.location);
--        }
-+            let mut has_cursor_update = false;
-+            let mut redraw_cursor = false;
-+            if self.cursor_mode != CursorMode::Hidden {
-+                let (damage, _states) = cursor_damage_tracker
-+                    .damage_output(1, &cursor_data.relocated)
-+                    .unwrap();
-+                redraw_cursor = damage.is_some();
-+                has_cursor_update =
-+                    redraw_cursor || *last_cursor_location != Some(cursor_data.location);
-+            }
- 
--        if damage.is_none() && !has_cursor_update {
--            trace!("no damage, skipping frame");
--            return false;
--        }
--        *last_cursor_location = Some(cursor_data.location);
--        drop(inner);
-+            if damage.is_none() && !has_cursor_update {
-+                trace!("no damage, skipping frame");
-+                return false;
-+            }
-+            *last_cursor_location = Some(cursor_data.location);
-+            drop(inner);
- 
--        let Some(pw_buffer) = self.dequeue_available_buffer() else {
--            warn!("no available buffer in pw stream, skipping frame");
--            return false;
--        };
--        let buffer = pw_buffer.as_ptr();
-+            let Some(pw_buffer) = self.dequeue_available_buffer() else {
-+                warn!("no available buffer in pw stream, skipping frame");
-+                return false;
-+            };
-+            let buffer = pw_buffer.as_ptr();
- 
--        unsafe {
--            let spa_buffer = (*buffer).buffer;
--
--            let mut pointer_elements = None;
--            if self.cursor_mode == CursorMode::Metadata {
--                add_cursor_metadata(renderer, spa_buffer, cursor_data, redraw_cursor);
--            } else if self.cursor_mode != CursorMode::Hidden {
--                // Embed the cursor into the main render.
--                pointer_elements = Some(cursor_data.original.iter());
--            }
--            let pointer_elements = pointer_elements.into_iter().flatten();
--            let elements = pointer_elements.chain(elements);
--
--            // FIXME: would be good to skip rendering the full frame if only the pointer changed.
--            // Unfortunately, I think the OBS PipeWire code needs to be updated first to cleanly
--            // allow for that codepath.
--            let fd = (*(*spa_buffer).datas).fd;
--            let dmabuf = self.inner.borrow().dmabufs[&fd].clone();
--
--            match render_to_dmabuf(
--                renderer,
--                dmabuf,
--                size,
--                scale,
--                Transform::Normal,
--                elements.rev(),
--            ) {
--                Ok(sync_point) => {
--                    mark_buffer_as_good(pw_buffer, &mut self.sequence_counter);
--                    trace!("queueing buffer with seq={}", self.sequence_counter);
--                    self.queue_after_sync(pw_buffer, sync_point);
--                    true
-+            match extra_negotiation_result {
-+                Some(_) => {
-+                    unsafe {
-+                        let spa_buffer = (*buffer).buffer;
-+
-+                        let mut pointer_elements = None;
-+                        if self.cursor_mode == CursorMode::Metadata {
-+                            add_cursor_metadata(renderer, spa_buffer, cursor_data, redraw_cursor);
-+                        } else if self.cursor_mode != CursorMode::Hidden {
-+                            // Embed the cursor into the main render.
-+                            pointer_elements = Some(cursor_data.original.iter());
-+                        }
-+                        let pointer_elements = pointer_elements.into_iter().flatten();
-+                        let elements = pointer_elements.chain(elements);
-+
-+                        // FIXME: would be good to skip rendering the full frame if only the pointer changed.
-+                        // Unfortunately, I think the OBS PipeWire code needs to be updated first to cleanly
-+                        // allow for that codepath.
-+                        let fd = (*(*spa_buffer).datas).fd;
-+                        let dmabuf = self.inner.borrow().dmabufs[&fd].clone();
-+
-+                        match render_to_dmabuf(
-+                            renderer,
-+                            dmabuf,
-+                            size,
-+                            scale,
-+                            Transform::Normal,
-+                            elements.rev(),
-+                        ) {
-+                            Ok(sync_point) => {
-+                                mark_buffer_after_render(pw_buffer, &mut self.sequence_counter, SharingBuf::DMA(()));
-+                                trace!("queueing buffer with seq={}", self.sequence_counter);
-+                                self.queue_after_sync(pw_buffer, sync_point);
-+                                true
-+                            }
-+                            Err(err) => {
-+                                warn!("error rendering to dmabuf: {err:?}");
-+                                return_unused_buffer(&self.stream, pw_buffer);
-+                                false
-+                            }
-+                        }
-+                    }
-                 }
--                Err(err) => {
--                    warn!("error rendering to dmabuf: {err:?}");
--                    return_unused_buffer(&self.stream, pw_buffer);
--                    false
-+                None => {
-+                    unsafe {
-+                        let spa_buffer = (*buffer).buffer;
-+
-+                        let mut pointer_elements = None;
-+                        if self.cursor_mode == CursorMode::Metadata {
-+                            add_cursor_metadata(renderer, spa_buffer, cursor_data, redraw_cursor);
-+                        } else if self.cursor_mode != CursorMode::Hidden {
-+                            // Embed the cursor into the main render.
-+                            pointer_elements = Some(cursor_data.original.iter());
-+                        }
-+                        let pointer_elements = pointer_elements.into_iter().flatten();
-+                        let elements = pointer_elements.chain(elements);
-+
-+                        // FIXME: would be good to skip rendering the full frame if only the pointer changed.
-+                        // Unfortunately, I think the OBS PipeWire code needs to be updated first to cleanly
-+                        // allow for that codepath.
-+                        let fd = (*(*spa_buffer).datas).fd;
-+                        let shmbuf = self.inner.borrow().shmbufs[&fd].clone();
-+
-+                        let fourcc = if alpha {
-+                            Fourcc::Argb8888
-+                        } else {
-+                            Fourcc::Xrgb8888
-+                        };
-+
-+
-+                        match render_to_shmbuf(
-+                            renderer,
-+                            &shmbuf,
-+                            size,
-+                            scale,
-+                            Transform::Normal,
-+                            fourcc,
-+                            elements.rev(),
-+                        ) {
-+                            Ok(()) => {
-+                                mark_buffer_after_render(pw_buffer, &mut self.sequence_counter, SharingBuf::SHM(&shmbuf));
-+                                trace!("queueing buffer with seq={}", self.sequence_counter);
-+                                self.queue_after_sync(pw_buffer, SyncPoint::signaled());
-+                                true
-+                            }
-+                            Err(err) => {
-+                                warn!("error rendering to shmbuf: {err:?}");
-+                                return_unused_buffer(&self.stream, pw_buffer);
-+                                false
-+                            }
-+                        }
-+                     }
-                 }
-             }
-+
-+        }
-+        else {
-+            error!("cast must be in Ready state to render");
-+            return false;
-         }
-     }
- 
-@@ -1182,28 +1453,64 @@ impl Cast {
-         let buffer = pw_buffer.as_ptr();
- 
-         unsafe {
--            let spa_buffer = (*buffer).buffer;
-+            if (*(*(*buffer).buffer).datas).type_ == DataType::DmaBuf.as_raw() {
-+                let spa_buffer = (*buffer).buffer;
- 
--            if self.cursor_mode == CursorMode::Metadata {
--                add_invisible_cursor(spa_buffer);
--            }
-+                if self.cursor_mode == CursorMode::Metadata {
-+                    add_invisible_cursor(spa_buffer);
-+                }
- 
--            let fd = (*(*spa_buffer).datas).fd;
--            let dmabuf = self.inner.borrow().dmabufs[&fd].clone();
-+                let fd = (*(*spa_buffer).datas).fd;
-+                let dmabuf = self.inner.borrow().dmabufs[&fd].clone();
- 
--            match clear_dmabuf(renderer, dmabuf) {
--                Ok(sync_point) => {
--                    mark_buffer_as_good(pw_buffer, &mut self.sequence_counter);
--                    trace!("queueing clear buffer with seq={}", self.sequence_counter);
--                    self.queue_after_sync(pw_buffer, sync_point);
--                    true
-+                match clear_dmabuf(renderer, dmabuf) {
-+                    Ok(sync_point) => {
-+                        mark_buffer_after_render(pw_buffer, &mut self.sequence_counter, SharingBuf::DMA(()));
-+                        trace!("queueing clear buffer with seq={}", self.sequence_counter);
-+                        self.queue_after_sync(pw_buffer, sync_point);
-+                        true
-+                    }
-+                    Err(err) => {
-+                        warn!("error clearing dmabuf: {err:?}");
-+                        return_unused_buffer(&self.stream, pw_buffer);
-+                        false
-+                    }
-                 }
--                Err(err) => {
--                    warn!("error clearing dmabuf: {err:?}");
--                    return_unused_buffer(&self.stream, pw_buffer);
--                    false
-+            } else if (*(*(*buffer).buffer).datas).type_ == DataType::MemFd.as_raw() {
-+                let blocks = (*(*buffer).buffer).n_datas;
-+
-+                if blocks as usize != SHM_BLOCKS {
-+                    warn!("expected {SHM_BLOCKS} blocks, got {blocks}");
-+                    return false;
-+                };
-+
-+                let spa_buffer = (*buffer).buffer;
-+
-+                if self.cursor_mode == CursorMode::Metadata {
-+                    add_invisible_cursor(spa_buffer);
-+                }
-+
-+                let fd = (*(*spa_buffer).datas).fd;
-+                let shmbuf = self.inner.borrow().shmbufs[&fd].clone();
-+
-+                match clear_shmbuf(&shmbuf) {
-+                    Ok (()) => {
-+                        mark_buffer_after_render(pw_buffer, &mut self.sequence_counter, SharingBuf::SHM(&shmbuf));
-+                        trace!("queueing clear buffer with seq={}", self.sequence_counter);
-+                        self.queue_after_sync(pw_buffer, SyncPoint::signaled());
-+                        true
-+                    }
-+                    Err(err) => {
-+                        warn!("error clearing shmbuf: {err:?}");
-+                        return_unused_buffer(&self.stream, pw_buffer);
-+                        false
-+                    }
-                 }
-+            } else {
-+                warn!("unknown data type in dequeue_buffer_and_clear");
-+                false
-             }
-+
-         }
-     }
- }
-@@ -1232,85 +1539,6 @@ fn pw_version_supports_cursor_metadata() -> bool {
+@@ -1260,85 +1362,6 @@ fn pw_version_supports_cursor_metadata() -> bool {
      unsafe { pw_check_library_version(1, 4, 8) }
  }
  
@@ -1420,41 +1262,478 @@ index 2b622db4..bcf2aee0 100644
  fn make_pod(buffer: &mut Vec<u8>, object: pod::Object) -> &Pod {
      PodSerializer::serialize(Cursor::new(&mut *buffer), &pod::Value::Object(object)).unwrap();
      Pod::from_bytes(buffer).unwrap()
-@@ -1381,6 +1609,45 @@ fn allocate_dmabuf(
+-- 
+2.53.0
+
+
+From f96b12a0607697fff95c342d0c6150f34cee8e30 Mon Sep 17 00:00:00 2001
+From: wrvsrx <wrvsrx@outlook.com>
+Date: Wed, 18 Feb 2026 04:31:43 +0800
+Subject: [PATCH 07/19] pw_utils: support negotiating to SHM sharing after
+ connect
+
+---
+ src/screencasting/pw_utils.rs | 262 ++++++++++++++++++++--------------
+ 1 file changed, 153 insertions(+), 109 deletions(-)
+
+diff --git a/src/screencasting/pw_utils.rs b/src/screencasting/pw_utils.rs
+index 313a9dce..a656279f 100644
+--- a/src/screencasting/pw_utils.rs
++++ b/src/screencasting/pw_utils.rs
+@@ -59,6 +59,7 @@ use crate::utils::{get_monotonic_time, CastSessionId, CastStreamId};
+ 
+ // Give a 0.1 ms allowance for presentation time errors.
+ const CAST_DELAY_ALLOWANCE: Duration = Duration::from_micros(100);
++const SHM_BLOCKS: usize = 1;
+ 
+ const CURSOR_FORMAT: spa_video_format = SPA_VIDEO_FORMAT_BGRA;
+ const CURSOR_BPP: u32 = 4;
+@@ -582,8 +583,9 @@ impl PipeWire {
+                     //    TODO: set CastState to Ready and set buffer to SHM.
+ 
+                     let object = pod.as_object().unwrap();
++                    let maybe_prop_modifier = object.find_prop(spa::utils::Id(FormatProperties::VideoModifier.0));
+ 
+-                    match object.find_prop(spa::utils::Id(FormatProperties::VideoModifier.0)) {
++                    match maybe_prop_modifier {
+                         Some(prop_modifier) if prop_modifier.flags().contains(PodPropFlags::DONT_FIXATE) => {
+                             debug!("fixating the modifier");
+ 
+@@ -645,124 +647,167 @@ impl PipeWire {
+                                 stop_cast();
+                             }
+                         }
+-                        Some(_) => {
+-                            // Verify that alpha and modifier didn't change.
+-                            let plane_count = match &*state {
+-                                CastState::ConfirmationPending {
+-                                    size,
+-                                    alpha,
+-                                    extra_negotiation_result,
+-                                }
+-                                | CastState::Ready {
+-                                    size,
+-                                    alpha,
+-                                    extra_negotiation_result,
+-                                    ..
+-                                } if *alpha == format_has_alpha
+-                                    && matches!(
+-                                        extra_negotiation_result, 
+-                                        Some(x) if x.modifier == Modifier::from(format.modifier())
+-                                    ) =>
+-                                {
+-                                    let size = *size;
+-                                    let alpha = *alpha;
+-                                    let extra_negotiation_result = *extra_negotiation_result;
+-
+-                                    let (damage_tracker, cursor_damage_tracker) =
+-                                        if let CastState::Ready {
+-                                            damage_tracker,
+-                                            cursor_damage_tracker,
++                        _ => {
++                            let o1 = match maybe_prop_modifier {
++                                Some(_) => {
++                                    // Verify that alpha and modifier didn't change.
++                                    let plane_count = match &*state {
++                                        CastState::ConfirmationPending {
++                                            size,
++                                            alpha,
++                                            extra_negotiation_result,
++                                        }
++                                        | CastState::Ready {
++                                            size,
++                                            alpha,
++                                            extra_negotiation_result,
+                                             ..
+-                                        } = &mut *state
++                                        } if *alpha == format_has_alpha
++                                            && matches!(
++                                                extra_negotiation_result, 
++                                                Some(x) if x.modifier == Modifier::from(format.modifier())
++                                            ) =>
+                                         {
+-                                            (damage_tracker.take(), cursor_damage_tracker.take())
+-                                        } else {
+-                                            (None, None)
+-                                        };
+-
+-                                    debug!("moving to ready state");
+-
+-                                    *state = CastState::Ready {
+-                                        size,
+-                                        alpha,
+-                                        extra_negotiation_result,
+-                                        damage_tracker,
+-                                        cursor_damage_tracker,
+-                                        last_cursor_location: None,
+-                                    };
+-
+-                                    extra_negotiation_result.unwrap().plane_count
+-                                }
+-                                _ => {
+-                                    // We're negotiating a single modifier, or alpha or modifier changed,
+-                                    // so we need to do a test allocation.
+-                                    let (modifier, plane_count) = match find_preferred_modifier(
+-                                        &gbm,
+-                                        format_size,
+-                                        fourcc,
+-                                        vec![format.modifier() as i64],
+-                                    ) {
+-                                        Ok(x) => x,
+-                                        Err(err) => {
+-                                            warn!("test allocation failed: {err:?}");
+-                                            stop_cast();
+-                                            return;
++                                            let size = *size;
++                                            let alpha = *alpha;
++                                            let extra_negotiation_result = *extra_negotiation_result;
++
++                                            let (damage_tracker, cursor_damage_tracker) =
++                                                if let CastState::Ready {
++                                                    damage_tracker,
++                                                    cursor_damage_tracker,
++                                                    ..
++                                                } = &mut *state
++                                                {
++                                                    (damage_tracker.take(), cursor_damage_tracker.take())
++                                                } else {
++                                                    (None, None)
++                                                };
++
++                                            debug!("moving to ready state");
++
++                                            *state = CastState::Ready {
++                                                size,
++                                                alpha,
++                                                extra_negotiation_result,
++                                                damage_tracker,
++                                                cursor_damage_tracker,
++                                                last_cursor_location: None,
++                                            };
++
++                                            extra_negotiation_result.unwrap().plane_count
+                                         }
+-                                    };
++                                        _ => {
++                                            // We're negotiating a single modifier, or alpha or modifier changed,
++                                            // so we need to do a test allocation.
++                                            let (modifier, plane_count) = match find_preferred_modifier(
++                                                &gbm,
++                                                format_size,
++                                                fourcc,
++                                                vec![format.modifier() as i64],
++                                            ) {
++                                                Ok(x) => x,
++                                                Err(err) => {
++                                                    warn!("test allocation failed: {err:?}");
++                                                    stop_cast();
++                                                    return;
++                                                }
++                                            };
++
++                                            debug!(
++                                                "allocation successful \
++                                                 (modifier={modifier:?}, plane_count={plane_count}), \
++                                                 moving to ready"
++                                            );
+ 
+-                                    debug!(
+-                                        "allocation successful \
+-                                         (modifier={modifier:?}, plane_count={plane_count}), \
+-                                         moving to ready"
+-                                    );
++                                            *state = CastState::Ready {
++                                                size: format_size,
++                                                alpha: format_has_alpha,
++                                                extra_negotiation_result: Some(DmaNegotiationResult {
++                                                    modifier,
++                                                    plane_count: plane_count as i32,
++                                                }),
++                                                damage_tracker: None,
++                                                cursor_damage_tracker: None,
++                                                last_cursor_location: None,
++                                            };
++
++                                            plane_count as i32
++                                        }
+ 
++                                    };
++                                    // const BPP: u32 = 4;
++                                    // let stride = format.size().width * BPP;
++                                    // let size = stride * format.size().height;
++
++                                    pod::object!(
++                                        SpaTypes::ObjectParamBuffers,
++                                        ParamType::Buffers,
++                                        Property::new(
++                                            SPA_PARAM_BUFFERS_buffers,
++                                            pod::Value::Choice(ChoiceValue::Int(Choice(
++                                                ChoiceFlags::empty(),
++                                                ChoiceEnum::Range {
++                                                    default: 8,
++                                                    min: 2,
++                                                    max: 16
++                                                }
++                                            ))),
++                                        ),
++                                        Property::new(SPA_PARAM_BUFFERS_blocks, pod::Value::Int(plane_count)),
++                                        Property::new(
++                                            SPA_PARAM_BUFFERS_dataType,
++                                            pod::Value::Choice(ChoiceValue::Int(Choice(
++                                                ChoiceFlags::empty(),
++                                                ChoiceEnum::Flags {
++                                                    default: 1 << DataType::DmaBuf.as_raw(),
++                                                    flags: vec![1 << DataType::DmaBuf.as_raw()],
++                                                },
++                                            ))),
++                                        ),
++                                    )
++                                },
++                                None => {
+                                     *state = CastState::Ready {
+                                         size: format_size,
+                                         alpha: format_has_alpha,
+-                                        extra_negotiation_result: Some(DmaNegotiationResult {
+-                                            modifier,
+-                                            plane_count: plane_count as i32,
+-                                        }),
++                                        extra_negotiation_result: None,
+                                         damage_tracker: None,
+                                         cursor_damage_tracker: None,
+                                         last_cursor_location: None,
+                                     };
+-
+-                                    plane_count as i32
++                                    pod::object!(
++                                        SpaTypes::ObjectParamBuffers,
++                                        ParamType::Buffers,
++                                        Property::new(
++                                            SPA_PARAM_BUFFERS_buffers,
++                                            pod::Value::Choice(ChoiceValue::Int(Choice(
++                                                        ChoiceFlags::empty(),
++                                                        ChoiceEnum::Range {
++                                                            default: 16,
++                                                            min: 2,
++                                                            max: 16
++                                                        }
++                                            ))),
++                                        ),
++                                        Property::new(
++                                            SPA_PARAM_BUFFERS_blocks,
++                                            pod::Value::Int(SHM_BLOCKS as i32),
++                                        ),
++                                        Property::new(
++                                            SPA_PARAM_BUFFERS_dataType,
++                                            pod::Value::Choice(ChoiceValue::Int(Choice(
++                                                        ChoiceFlags::empty(),
++                                                        ChoiceEnum::Flags {
++                                                            default: 1 << DataType::MemFd.as_raw(),
++                                                            flags: vec![1 << DataType::MemFd.as_raw()],
++                                                        },
++                                            ))),
++                                        ),
++                                    )
+                                 }
+-                            };
+-
+-                            // const BPP: u32 = 4;
+-                            // let stride = format.size().width * BPP;
+-                            // let size = stride * format.size().height;
+-
+-                            let o1 = pod::object!(
+-                                SpaTypes::ObjectParamBuffers,
+-                                ParamType::Buffers,
+-                                Property::new(
+-                                    SPA_PARAM_BUFFERS_buffers,
+-                                    pod::Value::Choice(ChoiceValue::Int(Choice(
+-                                        ChoiceFlags::empty(),
+-                                        ChoiceEnum::Range {
+-                                            default: 8,
+-                                            min: 2,
+-                                            max: 16
+-                                        }
+-                                    ))),
+-                                ),
+-                                Property::new(SPA_PARAM_BUFFERS_blocks, pod::Value::Int(plane_count)),
+-                                Property::new(
+-                                    SPA_PARAM_BUFFERS_dataType,
+-                                    pod::Value::Choice(ChoiceValue::Int(Choice(
+-                                        ChoiceFlags::empty(),
+-                                        ChoiceEnum::Flags {
+-                                            default: 1 << DataType::DmaBuf.as_raw(),
+-                                            flags: vec![1 << DataType::DmaBuf.as_raw()],
+-                                        },
+-                                    ))),
+-                                ),
+-                            );
+ 
++                            };
+                             let o2 = pod::object!(
+                                 SpaTypes::ObjectParamMeta,
+                                 ParamType::Meta,
+@@ -775,8 +820,10 @@ impl PipeWire {
+                                     pod::Value::Int(size_of::<spa_meta_header>() as i32)
+                                 ),
+                             );
++
+                             let mut b1 = vec![];
+                             let mut b2 = vec![];
++
+                             let mut params = vec![make_pod(&mut b1, o1), make_pod(&mut b2, o2)];
+ 
+                             let mut b_cursor = vec![];
+@@ -800,10 +847,7 @@ impl PipeWire {
+                                 warn!("error updating stream params: {err:?}");
+                                 stop_cast();
+                             }
+-                        }
+-                        None => {
+-                            warn!("pw stream: modifier prop missing and we don't support shared memory sharing currently");
+-                            stop_cast();
++
+                         }
+                     };
+                 }
+-- 
+2.53.0
+
+
+From a3755210a02298d1acfc39cec90cb6580864141f Mon Sep 17 00:00:00 2001
+From: wrvsrx <wrvsrx@outlook.com>
+Date: Tue, 2 Sep 2025 03:04:27 +0800
+Subject: [PATCH 08/19] pw_utils: support add and remove shm buffer
+
+---
+ src/screencasting/pw_utils.rs | 84 ++++++++++++++++++++++++++++++++---
+ 1 file changed, 79 insertions(+), 5 deletions(-)
+
+diff --git a/src/screencasting/pw_utils.rs b/src/screencasting/pw_utils.rs
+index a656279f..bb93c1bb 100644
+--- a/src/screencasting/pw_utils.rs
++++ b/src/screencasting/pw_utils.rs
+@@ -60,6 +60,8 @@ use crate::utils::{get_monotonic_time, CastSessionId, CastStreamId};
+ // Give a 0.1 ms allowance for presentation time errors.
+ const CAST_DELAY_ALLOWANCE: Duration = Duration::from_micros(100);
+ const SHM_BLOCKS: usize = 1;
++const SHM_BYTES_PER_PIXEL: usize = 4;
++
+ 
+ const CURSOR_FORMAT: spa_video_format = SPA_VIDEO_FORMAT_BGRA;
+ const CURSOR_BPP: u32 = 4;
+@@ -113,6 +115,7 @@ struct CastInner {
+     refresh: u32,
+     min_time_between_frames: Duration,
+     dmabufs: HashMap<i64, Dmabuf>,
++    shmbufs: HashMap<i64, Shmbuf>,
+     /// Buffers dequeued from PipeWire in process of rendering.
+     ///
+     /// This is an ordered list of buffers that we started rendering to and waiting for the
+@@ -452,6 +455,7 @@ impl PipeWire {
+             refresh,
+             min_time_between_frames: Duration::ZERO,
+             dmabufs: HashMap::new(),
++            shmbufs: HashMap::new(),
+             rendering_buffers: Vec::new(),
+         }));
+ 
+@@ -868,7 +872,7 @@ impl PipeWire {
+                         } => {
+                             match extra_negotiation_result {
+                                 Some(DmaNegotiationResult { modifier, .. }) => {
+-                                    trace!("size={size:?}, alpha={alpha}, modifier={modifier:?}");
++                                    trace!("pw stream: add_buffer (dma), size={size:?}, alpha={alpha}, modifier={modifier:?}");
+                                     unsafe {
+                                         let spa_buffer = (*buffer).buffer;
+ 
+@@ -928,7 +932,32 @@ impl PipeWire {
+                                     }
+                                 },
+                                 None => {
+-                                    warn!("pw stream: shared memory sharing hasn't been implemented")
++                                    trace!("pw stream: add_buffer (shm), size={size:?}, alpha={alpha}");
++                                    unsafe {
++                                        let spa_buffer = (*buffer).buffer;
++
++                                        let shmbuf = match allocate_shmbuf(size) {
++                                            Ok(x) => x,
++                                            Err(err) => {
++                                                warn!("error allocating shmbuf: {err:?}");
++                                                stop_cast();
++                                                return;
++                                            }
++                                        };
++
++                                        assert_eq!((*spa_buffer).n_datas as usize, SHM_BLOCKS);
++
++                                        let spa_data = (*spa_buffer).datas;
++                                        assert!((*spa_data).type_ & (1 << DataType::MemFd.as_raw()) > 0);
++
++                                        (*spa_data).type_ = DataType::MemFd.as_raw();
++                                        (*spa_data).maxsize = shmbuf.size as u32;
++                                        (*spa_data).fd = shmbuf.fd.as_raw_fd() as i64;
++                                        (*spa_data).flags = SPA_DATA_FLAG_READWRITE;
++
++                                        let fd = (*(*spa_buffer).datas).fd;
++                                        assert!(inner.shmbufs.insert(fd, shmbuf).is_none());
++                                    }
+                                 }
+                             }
+                         },
+@@ -951,10 +980,21 @@ impl PipeWire {
+                     unsafe {
+                         let spa_buffer = (*buffer).buffer;
+                         let spa_data = (*spa_buffer).datas;
+-                        assert!((*spa_buffer).n_datas > 0);
+ 
+-                        let fd = (*spa_data).fd;
+-                        inner.dmabufs.remove(&fd);
++                        if (*spa_data).type_ == DataType::DmaBuf.as_raw() {
++                            trace!("pw stream: remove_buffer (dma)");
++                            assert!((*spa_buffer).n_datas > 0);
++
++                            let fd = (*spa_data).fd;
++                            inner.dmabufs.remove(&fd);
++                        } else if (*spa_data).type_ == DataType::MemFd.as_raw() {
++                            trace!("pw stream: remove_buffer (shm)");
++                            assert_eq!((*spa_buffer).n_datas, SHM_BLOCKS as u32);
++                            let fd = (*spa_data).fd;
++                            inner.shmbufs.remove(&fd);
++                        } else {
++                            warn!("pw stream: remove_buffer (unknown), impossible case happens, {:?}", (*spa_data).type_);
++                        }
+                     }
+                 }
+             })
+@@ -1476,6 +1516,40 @@ fn allocate_dmabuf(
      Ok(dmabuf)
  }
  
 +#[derive(Debug, Clone)]
 +pub struct Shmbuf {
-+    fd: Rc<rustix::fd::OwnedFd>,
++    fd: Rc<smithay::reexports::rustix::fd::OwnedFd>,
 +    stride: usize,
 +    size: usize,
-+}
-+
-+enum SharingBuf<'a> {
-+    DMA (()),
-+    SHM (&'a Shmbuf),
 +}
 +
 +fn allocate_shmbuf(size: Size<u32, Physical>) -> anyhow::Result<Shmbuf> {
 +    let (w, h) = (size.w as usize, size.h as usize);
 +    let stride = w * SHM_BYTES_PER_PIXEL;
 +    let size = stride * h;
-+    let fd = rustix::fs::memfd_create(
++    let fd = smithay::reexports::rustix::fs::memfd_create(
 +        "shm_buffer",
-+        rustix::fs::MemfdFlags::CLOEXEC
-+        | rustix::fs::MemfdFlags::ALLOW_SEALING,
++        smithay::reexports::rustix::fs::MemfdFlags::CLOEXEC
++            | smithay::reexports::rustix::fs::MemfdFlags::ALLOW_SEALING,
 +    )
-+        .context("error creating memfd")?;
-+    let _ = rustix::fs::ftruncate(&fd, size.try_into().unwrap())
++    .context("error creating memfd")?;
++    let _ = smithay::reexports::rustix::fs::ftruncate(&fd, size.try_into().unwrap())
 +        .context("error set size of the fd")?;
-+    let _ = rustix::fs::fcntl_add_seals(
++    let _ = smithay::reexports::rustix::fs::fcntl_add_seals(
 +        &fd,
-+        rustix::fs::SealFlags::SEAL
-+        | rustix::fs::SealFlags::SHRINK
-+        | rustix::fs::SealFlags::GROW,
++        smithay::reexports::rustix::fs::SealFlags::SEAL
++            | smithay::reexports::rustix::fs::SealFlags::SHRINK
++            | smithay::reexports::rustix::fs::SealFlags::GROW,
 +    )
-+        .context("error sealing the fd")?;
++    .context("error sealing the fd")?;
 +    Ok(Shmbuf {
 +        fd: fd.into(),
 +        size,
@@ -1466,50 +1745,409 @@ index 2b622db4..bcf2aee0 100644
  unsafe fn return_unused_buffer(stream: &Stream, pw_buffer: NonNull<pw_buffer>) {
      // pw_stream_return_buffer() requires too new PipeWire (1.4.0). So, mark as
      // corrupted and queue.
-@@ -1399,21 +1666,31 @@ unsafe fn return_unused_buffer(stream: &Stream, pw_buffer: NonNull<pw_buffer>) {
-     pw_stream_queue_buffer(stream.as_raw_ptr(), pw_buffer);
- }
+-- 
+2.53.0
+
+
+From 15f0f7c880fbd854fa230d65e64799324f2c3fa3 Mon Sep 17 00:00:00 2001
+From: wrvsrx <wrvsrx@outlook.com>
+Date: Wed, 18 Feb 2026 04:43:45 +0800
+Subject: [PATCH 09/19] pw_utils: refactor `dequeue_buffer_and_render`
+
+---
+ src/screencasting/pw_utils.rs | 171 +++++++++++++++++-----------------
+ 1 file changed, 86 insertions(+), 85 deletions(-)
+
+diff --git a/src/screencasting/pw_utils.rs b/src/screencasting/pw_utils.rs
+index bb93c1bb..bf8cccb3 100644
+--- a/src/screencasting/pw_utils.rs
++++ b/src/screencasting/pw_utils.rs
+@@ -1273,105 +1273,106 @@ impl Cast {
+     ) -> bool {
+         let mut inner = self.inner.borrow_mut();
  
--unsafe fn mark_buffer_as_good(pw_buffer: NonNull<pw_buffer>, sequence: &mut u64) {
-+unsafe fn mark_buffer_after_render(pw_buffer: NonNull<pw_buffer>, sequence: &mut u64, buf: SharingBuf) {
-     let pw_buffer = pw_buffer.as_ptr();
-     let spa_buffer = (*pw_buffer).buffer;
-     let chunk = (*(*spa_buffer).datas).chunk;
- 
--    // With DMA-BUFs, consumers should ignore the size field, and producers are allowed
--    // to set it to 0.
--    //
--    // https://docs.pipewire.org/page_dma_buf.html
--    //
--    // However, OBS checks for size != 0 as a workaround for old compositor versions,
--    // so we set it to 1.
--    (*chunk).size = 1;
--    // Clear the corrupted flag we may have set before.
--    (*chunk).flags = SPA_CHUNK_FLAG_NONE as i32;
-+    match buf {
-+        SharingBuf::DMA(_) => {
-+            // With DMA-BUFs, consumers should ignore the size field, and producers are allowed
-+            // to set it to 0.
-+            //
-+            // https://docs.pipewire.org/page_dma_buf.html
-+            //
-+            // However, OBS checks for size != 0 as a workaround for old compositor versions,
-+            // so we set it to 1.
-+            (*chunk).size = 1;
-+            // Clear the corrupted flag we may have set before.
-+            (*chunk).flags = SPA_CHUNK_FLAG_NONE as i32;
-+        }
-+        SharingBuf::SHM(shmbuf) => {
-+            (*chunk).size = 1;
-+            (*chunk).stride = shmbuf.stride as i32;
-+            (*chunk).offset = 0;
-+        }
-+    }
+-        let CastState::Ready {
++        if let CastState::Ready {
+             damage_tracker,
+             cursor_damage_tracker,
+             last_cursor_location,
+             ..
+-        } = &mut inner.state
+-        else {
+-            error!("cast must be in Ready state to render");
+-            return false;
+-        };
+-        let damage_tracker = damage_tracker
+-            .get_or_insert_with(|| OutputDamageTracker::new(size, scale, Transform::Normal));
+-        let cursor_damage_tracker = cursor_damage_tracker.get_or_insert_with(|| {
+-            OutputDamageTracker::new(
+-                Size::from((CURSOR_WIDTH as _, CURSOR_HEIGHT as _)),
+-                scale,
+-                Transform::Normal,
+-            )
+-        });
+-
+-        // Size change will drop the damage tracker, but scale change won't, so check it here.
+-        let OutputModeSource::Static { scale: t_scale, .. } = damage_tracker.mode() else {
+-            unreachable!();
+-        };
+-        if *t_scale != scale {
+-            *damage_tracker = OutputDamageTracker::new(size, scale, Transform::Normal);
+-            *cursor_damage_tracker = OutputDamageTracker::new(
+-                Size::from((CURSOR_WIDTH as _, CURSOR_HEIGHT as _)),
+-                scale,
+-                Transform::Normal,
+-            );
+-        }
+-
+-        let (damage, _states) = damage_tracker.damage_output(1, elements).unwrap();
+-
+-        let mut has_cursor_update = false;
+-        let mut redraw_cursor = false;
+-        if self.cursor_mode != CursorMode::Hidden {
+-            let (damage, _states) = cursor_damage_tracker
+-                .damage_output(1, &cursor_data.relocated)
+-                .unwrap();
+-            redraw_cursor = damage.is_some();
+-            has_cursor_update =
+-                redraw_cursor || *last_cursor_location != Some(cursor_data.location);
+-        }
+-
+-        if damage.is_none() && !has_cursor_update {
+-            trace!("no damage, skipping frame");
+-            return false;
+-        }
+-        *last_cursor_location = Some(cursor_data.location);
+-        drop(inner);
++        } = &mut inner.state {
++            let damage_tracker = damage_tracker
++                .get_or_insert_with(|| OutputDamageTracker::new(size, scale, Transform::Normal));
++            let cursor_damage_tracker = cursor_damage_tracker.get_or_insert_with(|| {
++                OutputDamageTracker::new(
++                    Size::from((CURSOR_WIDTH as _, CURSOR_HEIGHT as _)),
++                    scale,
++                    Transform::Normal,
++                )
++            });
 +
++            // Size change will drop the damage tracker, but scale change won't, so check it here.
++            let OutputModeSource::Static { scale: t_scale, .. } = damage_tracker.mode() else {
++                unreachable!();
++            };
++            if *t_scale != scale {
++                *damage_tracker = OutputDamageTracker::new(size, scale, Transform::Normal);
++                *cursor_damage_tracker = OutputDamageTracker::new(
++                    Size::from((CURSOR_WIDTH as _, CURSOR_HEIGHT as _)),
++                    scale,
++                    Transform::Normal,
++                );
++            }
  
-     *sequence = sequence.wrapping_add(1);
-     if let Some(header) = find_meta_header(spa_buffer) {
-@@ -1429,6 +1706,45 @@ unsafe fn find_meta_header(buffer: *mut spa_buffer) -> Option<NonNull<spa_meta_h
+-        let Some(pw_buffer) = self.dequeue_available_buffer() else {
+-            warn!("no available buffer in pw stream, skipping frame");
+-            return false;
+-        };
+-        let buffer = pw_buffer.as_ptr();
++            let (damage, _states) = damage_tracker.damage_output(1, elements).unwrap();
+ 
+-        unsafe {
+-            let spa_buffer = (*buffer).buffer;
++            let mut has_cursor_update = false;
++            let mut redraw_cursor = false;
++            if self.cursor_mode != CursorMode::Hidden {
++                let (damage, _states) = cursor_damage_tracker
++                    .damage_output(1, &cursor_data.relocated)
++                    .unwrap();
++                redraw_cursor = damage.is_some();
++                has_cursor_update =
++                    redraw_cursor || *last_cursor_location != Some(cursor_data.location);
++            }
+ 
+-            let mut pointer_elements = None;
+-            if self.cursor_mode == CursorMode::Metadata {
+-                add_cursor_metadata(renderer, spa_buffer, cursor_data, redraw_cursor);
+-            } else if self.cursor_mode != CursorMode::Hidden {
+-                // Embed the cursor into the main render.
+-                pointer_elements = Some(cursor_data.original.iter());
++            if damage.is_none() && !has_cursor_update {
++                trace!("no damage, skipping frame");
++                return false;
+             }
+-            let pointer_elements = pointer_elements.into_iter().flatten();
+-            let elements = pointer_elements.chain(elements);
++            *last_cursor_location = Some(cursor_data.location);
++            drop(inner);
+ 
+-            // FIXME: would be good to skip rendering the full frame if only the pointer changed.
+-            // Unfortunately, I think the OBS PipeWire code needs to be updated first to cleanly
+-            // allow for that codepath.
+-            let fd = (*(*spa_buffer).datas).fd;
+-            let dmabuf = self.inner.borrow().dmabufs[&fd].clone();
++            let Some(pw_buffer) = self.dequeue_available_buffer() else {
++                warn!("no available buffer in pw stream, skipping frame");
++                return false;
++            };
++            let buffer = pw_buffer.as_ptr();
+ 
+-            match render_to_dmabuf(
+-                renderer,
+-                dmabuf,
+-                size,
+-                scale,
+-                Transform::Normal,
+-                elements.rev(),
+-            ) {
+-                Ok(sync_point) => {
+-                    mark_buffer_as_good(pw_buffer, &mut self.sequence_counter);
+-                    trace!("queueing buffer with seq={}", self.sequence_counter);
+-                    self.queue_after_sync(pw_buffer, sync_point);
+-                    true
++            unsafe {
++                let spa_buffer = (*buffer).buffer;
++
++                let mut pointer_elements = None;
++                if self.cursor_mode == CursorMode::Metadata {
++                    add_cursor_metadata(renderer, spa_buffer, cursor_data, redraw_cursor);
++                } else if self.cursor_mode != CursorMode::Hidden {
++                    // Embed the cursor into the main render.
++                    pointer_elements = Some(cursor_data.original.iter());
+                 }
+-                Err(err) => {
+-                    warn!("error rendering to dmabuf: {err:?}");
+-                    return_unused_buffer(&self.stream, pw_buffer);
+-                    false
++                let pointer_elements = pointer_elements.into_iter().flatten();
++                let elements = pointer_elements.chain(elements);
++
++                // FIXME: would be good to skip rendering the full frame if only the pointer changed.
++                // Unfortunately, I think the OBS PipeWire code needs to be updated first to cleanly
++                // allow for that codepath.
++                let fd = (*(*spa_buffer).datas).fd;
++                let dmabuf = self.inner.borrow().dmabufs[&fd].clone();
++
++                match render_to_dmabuf(
++                    renderer,
++                    dmabuf,
++                    size,
++                    scale,
++                    Transform::Normal,
++                    elements.rev(),
++                ) {
++                    Ok(sync_point) => {
++                        mark_buffer_as_good(pw_buffer, &mut self.sequence_counter);
++                        trace!("queueing buffer with seq={}", self.sequence_counter);
++                        self.queue_after_sync(pw_buffer, sync_point);
++                        true
++                    }
++                    Err(err) => {
++                        warn!("error rendering to dmabuf: {err:?}");
++                        return_unused_buffer(&self.stream, pw_buffer);
++                        false
++                    }
+                 }
+             }
+         }
++        else {
++            error!("cast must be in Ready state to render");
++            return false;
++        }
+     }
+ 
+     pub fn dequeue_buffer_and_clear(&mut self, renderer: &mut GlesRenderer) -> bool {
+-- 
+2.53.0
+
+
+From 245b29350aeed091a033f8810dda6fdffd753f5a Mon Sep 17 00:00:00 2001
+From: wrvsrx <wrvsrx@outlook.com>
+Date: Wed, 18 Feb 2026 05:03:41 +0800
+Subject: [PATCH 10/19] pw_utils: support render to shm buffer
+
+---
+ src/screencasting/pw_utils.rs | 175 ++++++++++++++++++++++++++--------
+ 1 file changed, 137 insertions(+), 38 deletions(-)
+
+diff --git a/src/screencasting/pw_utils.rs b/src/screencasting/pw_utils.rs
+index bf8cccb3..7ed02ba4 100644
+--- a/src/screencasting/pw_utils.rs
++++ b/src/screencasting/pw_utils.rs
+@@ -7,9 +7,10 @@ use std::os::fd::{AsFd, AsRawFd, BorrowedFd};
+ use std::ptr::NonNull;
+ use std::rc::Rc;
+ use std::time::Duration;
+-use std::{mem, slice};
++use std::{mem, ptr, slice};
+ 
+ use anyhow::Context as _;
++use anyhow::ensure;
+ use calloop::timer::{TimeoutAction, Timer};
+ use calloop::RegistrationToken;
+ use pipewire::context::ContextRc;
+@@ -46,6 +47,7 @@ use smithay::output::{Output, OutputModeSource};
+ use smithay::reexports::calloop::generic::Generic;
+ use smithay::reexports::calloop::{Interest, LoopHandle, Mode, PostAction};
+ use smithay::reexports::gbm::Modifier;
++use smithay::reexports::rustix;
+ use smithay::utils::{Logical, Physical, Point, Scale, Size, Transform};
+ use zbus::object_server::SignalEmitter;
+ 
+@@ -1277,6 +1279,8 @@ impl Cast {
+             damage_tracker,
+             cursor_damage_tracker,
+             last_cursor_location,
++            extra_negotiation_result,
++            alpha,
+             ..
+         } = &mut inner.state {
+             let damage_tracker = damage_tracker
+@@ -1288,6 +1292,8 @@ impl Cast {
+                     Transform::Normal,
+                 )
+             });
++            let extra_negotiation_result = extra_negotiation_result.clone();
++            let alpha = alpha.clone();
+ 
+             // Size change will drop the damage tracker, but scale change won't, so check it here.
+             let OutputModeSource::Static { scale: t_scale, .. } = damage_tracker.mode() else {
+@@ -1328,46 +1334,100 @@ impl Cast {
+             };
+             let buffer = pw_buffer.as_ptr();
+ 
+-            unsafe {
+-                let spa_buffer = (*buffer).buffer;
+-
+-                let mut pointer_elements = None;
+-                if self.cursor_mode == CursorMode::Metadata {
+-                    add_cursor_metadata(renderer, spa_buffer, cursor_data, redraw_cursor);
+-                } else if self.cursor_mode != CursorMode::Hidden {
+-                    // Embed the cursor into the main render.
+-                    pointer_elements = Some(cursor_data.original.iter());
+-                }
+-                let pointer_elements = pointer_elements.into_iter().flatten();
+-                let elements = pointer_elements.chain(elements);
+-
+-                // FIXME: would be good to skip rendering the full frame if only the pointer changed.
+-                // Unfortunately, I think the OBS PipeWire code needs to be updated first to cleanly
+-                // allow for that codepath.
+-                let fd = (*(*spa_buffer).datas).fd;
+-                let dmabuf = self.inner.borrow().dmabufs[&fd].clone();
+-
+-                match render_to_dmabuf(
+-                    renderer,
+-                    dmabuf,
+-                    size,
+-                    scale,
+-                    Transform::Normal,
+-                    elements.rev(),
+-                ) {
+-                    Ok(sync_point) => {
+-                        mark_buffer_as_good(pw_buffer, &mut self.sequence_counter);
+-                        trace!("queueing buffer with seq={}", self.sequence_counter);
+-                        self.queue_after_sync(pw_buffer, sync_point);
+-                        true
+-                    }
+-                    Err(err) => {
+-                        warn!("error rendering to dmabuf: {err:?}");
+-                        return_unused_buffer(&self.stream, pw_buffer);
+-                        false
++            match extra_negotiation_result {
++                Some(_) => {
++                    unsafe {
++                        let spa_buffer = (*buffer).buffer;
++
++                        let mut pointer_elements = None;
++                        if self.cursor_mode == CursorMode::Metadata {
++                            add_cursor_metadata(renderer, spa_buffer, cursor_data, redraw_cursor);
++                        } else if self.cursor_mode != CursorMode::Hidden {
++                            // Embed the cursor into the main render.
++                            pointer_elements = Some(cursor_data.original.iter());
++                        }
++                        let pointer_elements = pointer_elements.into_iter().flatten();
++                        let elements = pointer_elements.chain(elements);
++
++                        // FIXME: would be good to skip rendering the full frame if only the pointer changed.
++                        // Unfortunately, I think the OBS PipeWire code needs to be updated first to cleanly
++                        // allow for that codepath.
++                        let fd = (*(*spa_buffer).datas).fd;
++                        let dmabuf = self.inner.borrow().dmabufs[&fd].clone();
++
++                        match render_to_dmabuf(
++                            renderer,
++                            dmabuf,
++                            size,
++                            scale,
++                            Transform::Normal,
++                            elements.rev(),
++                        ) {
++                            Ok(sync_point) => {
++                                mark_buffer_as_good(pw_buffer, &mut self.sequence_counter);
++                                trace!("queueing buffer with seq={}", self.sequence_counter);
++                                self.queue_after_sync(pw_buffer, sync_point);
++                                true
++                            }
++                            Err(err) => {
++                                warn!("error rendering to dmabuf: {err:?}");
++                                return_unused_buffer(&self.stream, pw_buffer);
++                                false
++                            }
++                        }
+                     }
+                 }
++                None => {
++                    unsafe {
++                        let spa_buffer = (*buffer).buffer;
++
++                        let mut pointer_elements = None;
++                        if self.cursor_mode == CursorMode::Metadata {
++                            add_cursor_metadata(renderer, spa_buffer, cursor_data, redraw_cursor);
++                        } else if self.cursor_mode != CursorMode::Hidden {
++                            // Embed the cursor into the main render.
++                            pointer_elements = Some(cursor_data.original.iter());
++                        }
++                        let pointer_elements = pointer_elements.into_iter().flatten();
++                        let elements = pointer_elements.chain(elements);
++
++                        // FIXME: would be good to skip rendering the full frame if only the pointer changed.
++                        // Unfortunately, I think the OBS PipeWire code needs to be updated first to cleanly
++                        // allow for that codepath.
++                        let fd = (*(*spa_buffer).datas).fd;
++                        let shmbuf = self.inner.borrow().shmbufs[&fd].clone();
++
++                        let fourcc = if alpha {
++                            Fourcc::Argb8888
++                        } else {
++                            Fourcc::Xrgb8888
++                        };
++
++
++                        match render_to_shmbuf(
++                            renderer,
++                            &shmbuf,
++                            size,
++                            scale,
++                            Transform::Normal,
++                            fourcc,
++                            elements.rev(),
++                        ) {
++                            Ok(()) => {
++                                mark_buffer_as_good(pw_buffer, &mut self.sequence_counter);
++                                trace!("queueing buffer with seq={}", self.sequence_counter);
++                                true
++                            }
++                            Err(err) => {
++                                warn!("error rendering to shmbuf: {err:?}");
++                                return_unused_buffer(&self.stream, pw_buffer);
++                                false
++                            }
++                        }
++                     }
++                }
+             }
++
+         }
+         else {
+             error!("cast must be in Ready state to render");
+@@ -1599,6 +1659,45 @@ unsafe fn find_meta_header(buffer: *mut spa_buffer) -> Option<NonNull<spa_meta_h
      NonNull::new(p)
  }
  
@@ -1555,15 +2193,454 @@ index 2b622db4..bcf2aee0 100644
  unsafe fn add_invisible_cursor(spa_buffer: *mut spa_buffer) {
      unsafe {
          let cursor_meta_ptr: *mut spa_meta_cursor = spa_buffer_find_meta_data(
-@@ -1571,3 +1887,20 @@ unsafe fn add_cursor_metadata(
+-- 
+2.53.0
+
+
+From 1f1c6b9f0c845fe472ffe1976361a42959e50d15 Mon Sep 17 00:00:00 2001
+From: wrvsrx <wrvsrx@outlook.com>
+Date: Tue, 2 Sep 2025 04:14:39 +0800
+Subject: [PATCH 11/19] pw_utils: support clean shm buffer
+
+---
+ src/screencasting/pw_utils.rs | 85 ++++++++++++++++++++++++++++-------
+ 1 file changed, 69 insertions(+), 16 deletions(-)
+
+diff --git a/src/screencasting/pw_utils.rs b/src/screencasting/pw_utils.rs
+index 7ed02ba4..5af59d2c 100644
+--- a/src/screencasting/pw_utils.rs
++++ b/src/screencasting/pw_utils.rs
+@@ -1457,28 +1457,64 @@ impl Cast {
+         let buffer = pw_buffer.as_ptr();
+ 
+         unsafe {
+-            let spa_buffer = (*buffer).buffer;
++            if (*(*(*buffer).buffer).datas).type_ == DataType::DmaBuf.as_raw() {
++                let spa_buffer = (*buffer).buffer;
+ 
+-            if self.cursor_mode == CursorMode::Metadata {
+-                add_invisible_cursor(spa_buffer);
+-            }
++                if self.cursor_mode == CursorMode::Metadata {
++                    add_invisible_cursor(spa_buffer);
++                }
+ 
+-            let fd = (*(*spa_buffer).datas).fd;
+-            let dmabuf = self.inner.borrow().dmabufs[&fd].clone();
++                let fd = (*(*spa_buffer).datas).fd;
++                let dmabuf = self.inner.borrow().dmabufs[&fd].clone();
+ 
+-            match clear_dmabuf(renderer, dmabuf) {
+-                Ok(sync_point) => {
+-                    mark_buffer_as_good(pw_buffer, &mut self.sequence_counter);
+-                    trace!("queueing clear buffer with seq={}", self.sequence_counter);
+-                    self.queue_after_sync(pw_buffer, sync_point);
+-                    true
++                match clear_dmabuf(renderer, dmabuf) {
++                    Ok(sync_point) => {
++                        mark_buffer_as_good(pw_buffer, &mut self.sequence_counter);
++                        trace!("queueing clear buffer with seq={}", self.sequence_counter);
++                        self.queue_after_sync(pw_buffer, sync_point);
++                        true
++                    }
++                    Err(err) => {
++                        warn!("error clearing dmabuf: {err:?}");
++                        return_unused_buffer(&self.stream, pw_buffer);
++                        false
++                    }
+                 }
+-                Err(err) => {
+-                    warn!("error clearing dmabuf: {err:?}");
+-                    return_unused_buffer(&self.stream, pw_buffer);
+-                    false
++            } else if (*(*(*buffer).buffer).datas).type_ == DataType::MemFd.as_raw() {
++                let blocks = (*(*buffer).buffer).n_datas;
++
++                if blocks as usize != SHM_BLOCKS {
++                    warn!("expected {SHM_BLOCKS} blocks, got {blocks}");
++                    return false;
++                };
++
++                let spa_buffer = (*buffer).buffer;
++
++                if self.cursor_mode == CursorMode::Metadata {
++                    add_invisible_cursor(spa_buffer);
+                 }
++
++                let fd = (*(*spa_buffer).datas).fd;
++                let shmbuf = self.inner.borrow().shmbufs[&fd].clone();
++
++                match clear_shmbuf(shmbuf) {
++                    Ok (()) => {
++                        mark_buffer_as_good(pw_buffer, &mut self.sequence_counter);
++                        trace!("queueing clear buffer with seq={}", self.sequence_counter);
++                        true
++
++                    }
++                    Err(err) => {
++                        warn!("error clearing shmbuf: {err:?}");
++                        return_unused_buffer(&self.stream, pw_buffer);
++                        false
++                    }
++                }
++            } else {
++                warn!("unknown data type in dequeue_buffer_and_clear");
++                false
+             }
++
+         }
+     }
+ }
+@@ -1840,3 +1876,20 @@ unsafe fn add_cursor_metadata(
          bitmap_meta.stride = size.w * CURSOR_BPP as i32;
      }
  }
 +
-+fn clear_shmbuf(shmbuf: &Shmbuf) -> anyhow::Result<()> {
++fn clear_shmbuf(shmbuf: Shmbuf) -> anyhow::Result<()> {
 +    let bytes: Vec<u8> = vec![0u8; shmbuf.size];            
 +    unsafe {
 +        let buf = rustix::mm::mmap(
++                std::ptr::null_mut(),
++                shmbuf.size as usize,
++                rustix::mm::ProtFlags::READ | rustix::mm::ProtFlags::WRITE,
++                rustix::mm::MapFlags::SHARED,
++                shmbuf.fd.clone(),
++                0,
++            )?;
++        ptr::copy_nonoverlapping(bytes.as_ptr(), buf.cast(), shmbuf.size);
++        let _ = rustix::mm::munmap(buf, shmbuf.size).unwrap();
++    }
++    Ok(())
++}
+-- 
+2.53.0
+
+
+From 72cce3df7caea2e4d47e42569373421a9f36fcba Mon Sep 17 00:00:00 2001
+From: wrvsrx <wrvsrx@outlook.com>
+Date: Tue, 2 Sep 2025 05:48:23 +0800
+Subject: [PATCH 12/19] pw_utils: change paramater of clear_shmbuf to reference
+
+---
+ src/screencasting/pw_utils.rs | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/src/screencasting/pw_utils.rs b/src/screencasting/pw_utils.rs
+index 5af59d2c..c16a6a08 100644
+--- a/src/screencasting/pw_utils.rs
++++ b/src/screencasting/pw_utils.rs
+@@ -1497,12 +1497,11 @@ impl Cast {
+                 let fd = (*(*spa_buffer).datas).fd;
+                 let shmbuf = self.inner.borrow().shmbufs[&fd].clone();
+ 
+-                match clear_shmbuf(shmbuf) {
++                match clear_shmbuf(&shmbuf) {
+                     Ok (()) => {
+                         mark_buffer_as_good(pw_buffer, &mut self.sequence_counter);
+                         trace!("queueing clear buffer with seq={}", self.sequence_counter);
+                         true
+-
+                     }
+                     Err(err) => {
+                         warn!("error clearing shmbuf: {err:?}");
+@@ -1877,7 +1876,7 @@ unsafe fn add_cursor_metadata(
+     }
+ }
+ 
+-fn clear_shmbuf(shmbuf: Shmbuf) -> anyhow::Result<()> {
++fn clear_shmbuf(shmbuf: &Shmbuf) -> anyhow::Result<()> {
+     let bytes: Vec<u8> = vec![0u8; shmbuf.size];            
+     unsafe {
+         let buf = rustix::mm::mmap(
+-- 
+2.53.0
+
+
+From 66471b875acf5be98e66315787ae18f40f943da2 Mon Sep 17 00:00:00 2001
+From: wrvsrx <wrvsrx@outlook.com>
+Date: Tue, 2 Sep 2025 05:49:35 +0800
+Subject: [PATCH 13/19] pw_utils: add `queue_after_sync` to SHM sharing
+
+---
+ src/screencasting/pw_utils.rs | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/src/screencasting/pw_utils.rs b/src/screencasting/pw_utils.rs
+index c16a6a08..963f11ce 100644
+--- a/src/screencasting/pw_utils.rs
++++ b/src/screencasting/pw_utils.rs
+@@ -1416,11 +1416,13 @@ impl Cast {
+                             Ok(()) => {
+                                 mark_buffer_as_good(pw_buffer, &mut self.sequence_counter);
+                                 trace!("queueing buffer with seq={}", self.sequence_counter);
++                                self.queue_after_sync(pw_buffer, SyncPoint::signaled());
+                                 true
+                             }
+                             Err(err) => {
+                                 warn!("error rendering to shmbuf: {err:?}");
+                                 return_unused_buffer(&self.stream, pw_buffer);
++                                self.queue_after_sync(pw_buffer, SyncPoint::signaled());
+                                 false
+                             }
+                         }
+@@ -1501,6 +1503,7 @@ impl Cast {
+                     Ok (()) => {
+                         mark_buffer_as_good(pw_buffer, &mut self.sequence_counter);
+                         trace!("queueing clear buffer with seq={}", self.sequence_counter);
++                        self.queue_after_sync(pw_buffer, SyncPoint::signaled());
+                         true
+                     }
+                     Err(err) => {
+-- 
+2.53.0
+
+
+From aa1a6ddec2db46780c162f173cd986a0cf5fbb44 Mon Sep 17 00:00:00 2001
+From: wrvsrx <wrvsrx@outlook.com>
+Date: Tue, 2 Sep 2025 05:52:25 +0800
+Subject: [PATCH 14/19] pw_utils: rename `mark_buffer_as_good` to
+ `mark_buffer_after_render`
+
+I will change semantic of this function in later commit.
+---
+ src/screencasting/pw_utils.rs | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/src/screencasting/pw_utils.rs b/src/screencasting/pw_utils.rs
+index 963f11ce..7ff82f15 100644
+--- a/src/screencasting/pw_utils.rs
++++ b/src/screencasting/pw_utils.rs
+@@ -1364,7 +1364,7 @@ impl Cast {
+                             elements.rev(),
+                         ) {
+                             Ok(sync_point) => {
+-                                mark_buffer_as_good(pw_buffer, &mut self.sequence_counter);
++                                mark_buffer_after_render(pw_buffer, &mut self.sequence_counter);
+                                 trace!("queueing buffer with seq={}", self.sequence_counter);
+                                 self.queue_after_sync(pw_buffer, sync_point);
+                                 true
+@@ -1414,7 +1414,7 @@ impl Cast {
+                             elements.rev(),
+                         ) {
+                             Ok(()) => {
+-                                mark_buffer_as_good(pw_buffer, &mut self.sequence_counter);
++                                mark_buffer_after_render(pw_buffer, &mut self.sequence_counter);
+                                 trace!("queueing buffer with seq={}", self.sequence_counter);
+                                 self.queue_after_sync(pw_buffer, SyncPoint::signaled());
+                                 true
+@@ -1471,7 +1471,7 @@ impl Cast {
+ 
+                 match clear_dmabuf(renderer, dmabuf) {
+                     Ok(sync_point) => {
+-                        mark_buffer_as_good(pw_buffer, &mut self.sequence_counter);
++                        mark_buffer_after_render(pw_buffer, &mut self.sequence_counter);
+                         trace!("queueing clear buffer with seq={}", self.sequence_counter);
+                         self.queue_after_sync(pw_buffer, sync_point);
+                         true
+@@ -1501,7 +1501,7 @@ impl Cast {
+ 
+                 match clear_shmbuf(&shmbuf) {
+                     Ok (()) => {
+-                        mark_buffer_as_good(pw_buffer, &mut self.sequence_counter);
++                        mark_buffer_after_render(pw_buffer, &mut self.sequence_counter);
+                         trace!("queueing clear buffer with seq={}", self.sequence_counter);
+                         self.queue_after_sync(pw_buffer, SyncPoint::signaled());
+                         true
+@@ -1667,7 +1667,7 @@ unsafe fn return_unused_buffer(stream: &Stream, pw_buffer: NonNull<pw_buffer>) {
+     pw_stream_queue_buffer(stream.as_raw_ptr(), pw_buffer);
+ }
+ 
+-unsafe fn mark_buffer_as_good(pw_buffer: NonNull<pw_buffer>, sequence: &mut u64) {
++unsafe fn mark_buffer_after_render(pw_buffer: NonNull<pw_buffer>, sequence: &mut u64) {
+     let pw_buffer = pw_buffer.as_ptr();
+     let spa_buffer = (*pw_buffer).buffer;
+     let chunk = (*(*spa_buffer).datas).chunk;
+-- 
+2.53.0
+
+
+From 549ce29df67f3644613128f816bbc9ff8956df05 Mon Sep 17 00:00:00 2001
+From: wrvsrx <wrvsrx@outlook.com>
+Date: Tue, 2 Sep 2025 06:05:05 +0800
+Subject: [PATCH 15/19] pw_utils: update chunk info after render to shm buffer
+
+---
+ src/screencasting/pw_utils.rs | 45 +++++++++++++++++++++++------------
+ 1 file changed, 30 insertions(+), 15 deletions(-)
+
+diff --git a/src/screencasting/pw_utils.rs b/src/screencasting/pw_utils.rs
+index 7ff82f15..2ecb3990 100644
+--- a/src/screencasting/pw_utils.rs
++++ b/src/screencasting/pw_utils.rs
+@@ -1364,7 +1364,7 @@ impl Cast {
+                             elements.rev(),
+                         ) {
+                             Ok(sync_point) => {
+-                                mark_buffer_after_render(pw_buffer, &mut self.sequence_counter);
++                                mark_buffer_after_render(pw_buffer, &mut self.sequence_counter, SharingBuf::DMA(()));
+                                 trace!("queueing buffer with seq={}", self.sequence_counter);
+                                 self.queue_after_sync(pw_buffer, sync_point);
+                                 true
+@@ -1414,7 +1414,7 @@ impl Cast {
+                             elements.rev(),
+                         ) {
+                             Ok(()) => {
+-                                mark_buffer_after_render(pw_buffer, &mut self.sequence_counter);
++                                mark_buffer_after_render(pw_buffer, &mut self.sequence_counter, SharingBuf::SHM(&shmbuf));
+                                 trace!("queueing buffer with seq={}", self.sequence_counter);
+                                 self.queue_after_sync(pw_buffer, SyncPoint::signaled());
+                                 true
+@@ -1471,7 +1471,7 @@ impl Cast {
+ 
+                 match clear_dmabuf(renderer, dmabuf) {
+                     Ok(sync_point) => {
+-                        mark_buffer_after_render(pw_buffer, &mut self.sequence_counter);
++                        mark_buffer_after_render(pw_buffer, &mut self.sequence_counter, SharingBuf::DMA(()));
+                         trace!("queueing clear buffer with seq={}", self.sequence_counter);
+                         self.queue_after_sync(pw_buffer, sync_point);
+                         true
+@@ -1501,7 +1501,7 @@ impl Cast {
+ 
+                 match clear_shmbuf(&shmbuf) {
+                     Ok (()) => {
+-                        mark_buffer_after_render(pw_buffer, &mut self.sequence_counter);
++                        mark_buffer_after_render(pw_buffer, &mut self.sequence_counter, SharingBuf::SHM(&shmbuf));
+                         trace!("queueing clear buffer with seq={}", self.sequence_counter);
+                         self.queue_after_sync(pw_buffer, SyncPoint::signaled());
+                         true
+@@ -1622,6 +1622,11 @@ pub struct Shmbuf {
+     size: usize,
+ }
+ 
++enum SharingBuf<'a> {
++    DMA (()),
++    SHM (&'a Shmbuf),
++}
++
+ fn allocate_shmbuf(size: Size<u32, Physical>) -> anyhow::Result<Shmbuf> {
+     let (w, h) = (size.w as usize, size.h as usize);
+     let stride = w * SHM_BYTES_PER_PIXEL;
+@@ -1667,21 +1672,31 @@ unsafe fn return_unused_buffer(stream: &Stream, pw_buffer: NonNull<pw_buffer>) {
+     pw_stream_queue_buffer(stream.as_raw_ptr(), pw_buffer);
+ }
+ 
+-unsafe fn mark_buffer_after_render(pw_buffer: NonNull<pw_buffer>, sequence: &mut u64) {
++unsafe fn mark_buffer_after_render(pw_buffer: NonNull<pw_buffer>, sequence: &mut u64, buf: SharingBuf) {
+     let pw_buffer = pw_buffer.as_ptr();
+     let spa_buffer = (*pw_buffer).buffer;
+     let chunk = (*(*spa_buffer).datas).chunk;
+ 
+-    // With DMA-BUFs, consumers should ignore the size field, and producers are allowed
+-    // to set it to 0.
+-    //
+-    // https://docs.pipewire.org/page_dma_buf.html
+-    //
+-    // However, OBS checks for size != 0 as a workaround for old compositor versions,
+-    // so we set it to 1.
+-    (*chunk).size = 1;
+-    // Clear the corrupted flag we may have set before.
+-    (*chunk).flags = SPA_CHUNK_FLAG_NONE as i32;
++    match buf {
++        SharingBuf::DMA(_) => {
++            // With DMA-BUFs, consumers should ignore the size field, and producers are allowed
++            // to set it to 0.
++            //
++            // https://docs.pipewire.org/page_dma_buf.html
++            //
++            // However, OBS checks for size != 0 as a workaround for old compositor versions,
++            // so we set it to 1.
++            (*chunk).size = 1;
++            // Clear the corrupted flag we may have set before.
++            (*chunk).flags = SPA_CHUNK_FLAG_NONE as i32;
++        }
++        SharingBuf::SHM(shmbuf) => {
++            (*chunk).size = 1;
++            (*chunk).stride = shmbuf.stride as i32;
++            (*chunk).offset = 0;
++        }
++    }
++
+ 
+     *sequence = sequence.wrapping_add(1);
+     if let Some(header) = find_meta_header(spa_buffer) {
+-- 
+2.53.0
+
+
+From b9881a3f5023021e88d0f9d87bc620ec80855b90 Mon Sep 17 00:00:00 2001
+From: wrvsrx <wrvsrx@outlook.com>
+Date: Tue, 2 Sep 2025 06:17:00 +0800
+Subject: [PATCH 16/19] pw_utils: avoid excessive imports
+
+---
+ src/screencasting/pw_utils.rs | 38 +++++++++++++++++------------------
+ 1 file changed, 19 insertions(+), 19 deletions(-)
+
+diff --git a/src/screencasting/pw_utils.rs b/src/screencasting/pw_utils.rs
+index 2ecb3990..61ea4741 100644
+--- a/src/screencasting/pw_utils.rs
++++ b/src/screencasting/pw_utils.rs
+@@ -240,7 +240,7 @@ fn make_video_params(
+         })
+     };
+ 
+-    pipewire::spa::pod::Object {
++    pod::Object {
+         type_: SpaTypes::ObjectParamFormat.as_raw(),
+         id: ParamType::EnumFormat.as_raw(),
+         properties: [
+@@ -1617,7 +1617,7 @@ fn allocate_dmabuf(
+ 
+ #[derive(Debug, Clone)]
+ pub struct Shmbuf {
+-    fd: Rc<smithay::reexports::rustix::fd::OwnedFd>,
++    fd: Rc<rustix::fd::OwnedFd>,
+     stride: usize,
+     size: usize,
+ }
+@@ -1631,21 +1631,21 @@ fn allocate_shmbuf(size: Size<u32, Physical>) -> anyhow::Result<Shmbuf> {
+     let (w, h) = (size.w as usize, size.h as usize);
+     let stride = w * SHM_BYTES_PER_PIXEL;
+     let size = stride * h;
+-    let fd = smithay::reexports::rustix::fs::memfd_create(
++    let fd = rustix::fs::memfd_create(
+         "shm_buffer",
+-        smithay::reexports::rustix::fs::MemfdFlags::CLOEXEC
+-            | smithay::reexports::rustix::fs::MemfdFlags::ALLOW_SEALING,
++        rustix::fs::MemfdFlags::CLOEXEC
++        | rustix::fs::MemfdFlags::ALLOW_SEALING,
+     )
+-    .context("error creating memfd")?;
+-    let _ = smithay::reexports::rustix::fs::ftruncate(&fd, size.try_into().unwrap())
++        .context("error creating memfd")?;
++    let _ = rustix::fs::ftruncate(&fd, size.try_into().unwrap())
+         .context("error set size of the fd")?;
+-    let _ = smithay::reexports::rustix::fs::fcntl_add_seals(
++    let _ = rustix::fs::fcntl_add_seals(
+         &fd,
+-        smithay::reexports::rustix::fs::SealFlags::SEAL
+-            | smithay::reexports::rustix::fs::SealFlags::SHRINK
+-            | smithay::reexports::rustix::fs::SealFlags::GROW,
++        rustix::fs::SealFlags::SEAL
++        | rustix::fs::SealFlags::SHRINK
++        | rustix::fs::SealFlags::GROW,
+     )
+-    .context("error sealing the fd")?;
++        .context("error sealing the fd")?;
+     Ok(Shmbuf {
+         fd: fd.into(),
+         size,
+@@ -1898,13 +1898,13 @@ fn clear_shmbuf(shmbuf: &Shmbuf) -> anyhow::Result<()> {
+     let bytes: Vec<u8> = vec![0u8; shmbuf.size];            
+     unsafe {
+         let buf = rustix::mm::mmap(
+-                std::ptr::null_mut(),
+-                shmbuf.size as usize,
+-                rustix::mm::ProtFlags::READ | rustix::mm::ProtFlags::WRITE,
+-                rustix::mm::MapFlags::SHARED,
+-                shmbuf.fd.clone(),
+-                0,
+-            )?;
 +            std::ptr::null_mut(),
 +            shmbuf.size as usize,
 +            rustix::mm::ProtFlags::READ | rustix::mm::ProtFlags::WRITE,
@@ -1571,8 +2648,146 @@ index 2b622db4..bcf2aee0 100644
 +            shmbuf.fd.clone(),
 +            0,
 +        )?;
-+        ptr::copy_nonoverlapping(bytes.as_ptr(), buf.cast(), shmbuf.size);
-+        let _ = rustix::mm::munmap(buf, shmbuf.size).unwrap();
-+    }
-+    Ok(())
-+}
+         ptr::copy_nonoverlapping(bytes.as_ptr(), buf.cast(), shmbuf.size);
+         let _ = rustix::mm::munmap(buf, shmbuf.size).unwrap();
+     }
+-- 
+2.53.0
+
+
+From 8281db7e19d8d082cb336013ba5fa44dc2541058 Mon Sep 17 00:00:00 2001
+From: wrvsrx <wrvsrx@outlook.com>
+Date: Tue, 2 Sep 2025 06:18:36 +0800
+Subject: [PATCH 17/19] pw_utils: clean a variable name
+
+---
+ src/screencasting/pw_utils.rs | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/screencasting/pw_utils.rs b/src/screencasting/pw_utils.rs
+index 61ea4741..95b5a3e6 100644
+--- a/src/screencasting/pw_utils.rs
++++ b/src/screencasting/pw_utils.rs
+@@ -297,14 +297,14 @@ fn make_video_params_for_initial_negotiation(
+     refresh: u32,
+     alpha: bool,
+ ) -> Vec<pod::Object> {
+-    let f = |alpha_| {
+-        let video_formats = if alpha_ {
++    let f = |alpha| {
++        let video_formats = if alpha {
+             vec![VideoFormat::BGRA]
+         } else {
+             vec![VideoFormat::BGRx]
+         };
+ 
+-        let fourcc = if alpha_ {
++        let fourcc = if alpha {
+             Fourcc::Argb8888
+         } else {
+             Fourcc::Xrgb8888
+-- 
+2.53.0
+
+
+From 9e3d32aa1ded89ea4070b215f0eb95e5ef7b57d7 Mon Sep 17 00:00:00 2001
+From: wrvsrx <wrvsrx@outlook.com>
+Date: Tue, 2 Sep 2025 14:53:55 +0800
+Subject: [PATCH 18/19] pw_utils: remove a wrong syncpoint
+
+---
+ src/screencasting/pw_utils.rs | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/src/screencasting/pw_utils.rs b/src/screencasting/pw_utils.rs
+index 95b5a3e6..cf4baaf1 100644
+--- a/src/screencasting/pw_utils.rs
++++ b/src/screencasting/pw_utils.rs
+@@ -1422,7 +1422,6 @@ impl Cast {
+                             Err(err) => {
+                                 warn!("error rendering to shmbuf: {err:?}");
+                                 return_unused_buffer(&self.stream, pw_buffer);
+-                                self.queue_after_sync(pw_buffer, SyncPoint::signaled());
+                                 false
+                             }
+                         }
+-- 
+2.53.0
+
+
+From 151e6ea1b4811d5cbc063aa01aee072fc424e7db Mon Sep 17 00:00:00 2001
+From: wrvsrx <wrvsrx@outlook.com>
+Date: Sat, 8 Nov 2025 09:02:07 +0800
+Subject: [PATCH 19/19] pw_utils: avoid some repeated reallocations
+
+---
+ src/screencasting/pw_utils.rs | 29 ++++++++++++-----------------
+ 1 file changed, 12 insertions(+), 17 deletions(-)
+
+diff --git a/src/screencasting/pw_utils.rs b/src/screencasting/pw_utils.rs
+index cf4baaf1..bcf2aee0 100644
+--- a/src/screencasting/pw_utils.rs
++++ b/src/screencasting/pw_utils.rs
+@@ -291,12 +291,13 @@ fn make_video_params(
+     }
+ }
+ 
+-fn make_video_params_for_initial_negotiation(
++/// this function return an extra Vec<u8> to avoid extra allocation when building Pod
++fn make_video_params_for_initial_negotiation_with_extra_buffer(
+     possible_modifiers: &FormatSet,
+     size: Size<u32, Physical>,
+     refresh: u32,
+     alpha: bool,
+-) -> Vec<pod::Object> {
++) -> Vec<(pod::Object, Vec<u8>)> {
+     let f = |alpha| {
+         let video_formats = if alpha {
+             vec![VideoFormat::BGRA]
+@@ -318,34 +319,28 @@ fn make_video_params_for_initial_negotiation(
+         trace!("offering: {modifiers:?}");
+ 
+         if modifiers.len() == 0 {
+-            vec![make_video_params(
+-                &video_formats,
+-                &vec![],
+-                size,
+-                refresh,
+-                false,
+-            )]
++            vec![
++                (make_video_params(&video_formats, &vec![], size, refresh, false), Vec::new()),
++            ]
+         } else {
+             vec![
+-                make_video_params(&video_formats, &modifiers, size, refresh, false),
+-                make_video_params(&video_formats, &vec![], size, refresh, false),
++                (make_video_params(&video_formats, &modifiers, size, refresh, false), Vec::new()),
++                (make_video_params(&video_formats, &vec![], size, refresh, false), Vec::new()),
+             ]
+         }
+     };
+-    let pod_objects = if alpha {
++    let pod_objects_with_extra_buffer = if alpha {
+         [f(true), f(false)].concat()
+     } else {
+         f(false)
+     };
+-    pod_objects
++    pod_objects_with_extra_buffer
+ }
+ 
+ macro_rules! make_video_params_for_initial_negotiation_macro {
+     ($params:ident, $formats:expr, $size:expr, $refresh:expr, $alpha:expr) => {
+-        let $params = make_video_params_for_initial_negotiation($formats, $size, $refresh, $alpha);
+-        let mut obj_with_buffer: Vec<(&pod::Object, Vec<u8>)> =
+-            $params.iter().map(|obj| (obj, Vec::new())).collect();
+-        let $params: Vec<_> = obj_with_buffer
++        let mut $params = make_video_params_for_initial_negotiation_with_extra_buffer($formats, $size, $refresh, $alpha);
++        let $params: Vec<_> = $params
+             .iter_mut()
+             .map(|(obj, buf)| make_pod(buf, (*obj).clone()))
+             .collect();
+-- 
+2.53.0
+

@@ -14,6 +14,9 @@ in
     enable = true;
     useNautilus = true;
     package = pkgs.niri.overrideAttrs (oldAttrs: rec {
+      patches = (oldAttrs.patches or [ ]) ++ [
+        ./patches/niri-shm-2511.patch
+      ];
       # pname = "niri";
       # version = "unstable-${builtins.substring 0 7 niriCommit}";
 
@@ -24,21 +27,42 @@ in
       #   hash = "sha256-lqweVTwHhYc+9T33cysp38gVwxaibGJHriOPZXWyhCY=";
       # };
 
-      # cargoDeps = oldAttrs.cargoDeps.overrideAttrs (pkgs.lib.const {
-      #   inherit src patches;
-      #   outputHashMode = "recursive";
+      # cargoPatches = [
+      #   ./patches/niri-shm-main.patch
+      #   ./patches/niri-blur-wip.patch
+      # ];
+
+      # cargoDeps = pkgs.rustPlatform.fetchCargoVendor {
+      #   name = "${pname}-${version}-vendor.tar.gz";
+      #   inherit src;
+      #   outputHashMode = "recursive"; 
       #   outputHashAlgo = "sha256";
-      #   outputHash = "sha256-WEk60uhpXuQk5szOKohnjMYz7uq+jvnRfyMKUAz3BLM=";
-      # });
+      #   outputHash = "sha256-Wv/SNaguColGBI5CPqBIbdJATuA+EOPJRfJw42Pj7ZE=";
+      # };
+
+      # preBuild = ''
+      #   for dir in niri-config niri-ipc niri-visual-tests; do
+      #     if [ -d "$dir" ] && [ ! -f "$dir/.cargo-checksum.json" ]; then
+      #       echo '{"files":{}}' > "$dir/.cargo-checksum.json"
+      #     fi
+      #   done
+
+      #   find . -name .cargo-checksum.json -exec sed -i 's/"files":{[^}]*}/"files":{}/g' {} \;
+      # '';
+
+      # cargoVendorDir = null;
 
       # postPatch = ''
       #   patchShebangs resources/niri-session
+      #   substituteInPlace resources/niri.service \
+      #     --replace-fail 'ExecStart=niri' "ExecStart=$out/bin/niri"
       # '';
 
-      # doCheck = false;
-      patches = (oldAttrs.patches or [ ]) ++ [
-        ./patches/niri-shm-2511.patch
-      ];
+      # doInstallCheck = false;
+
+      # env = oldAttrs.env // {
+      #   NIRI_BUILD_COMMIT = niriCommit;
+      # };
     });
   };
 
