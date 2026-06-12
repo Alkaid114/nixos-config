@@ -3,8 +3,8 @@
   gtk = {
     enable = true;
     theme = lib.mkForce {
-      name = "catppuccin-mocha-blue-standard"; 
-      
+      name = "catppuccin-mocha-blue-standard";
+
       package = pkgs.catppuccin-gtk.override {
         variant = "mocha";
         accents = [ "blue" ];

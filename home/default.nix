@@ -29,9 +29,7 @@
     createDirectories = true;
   };
 
-  home.packages =
-    with pkgs;
-    [
-      gnome-themes-extra
-    ];
+  home.packages = with pkgs; [
+    gnome-themes-extra
+  ];
 }
