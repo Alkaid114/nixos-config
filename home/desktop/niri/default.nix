@@ -50,9 +50,5 @@ in
     //spawn-sh-at-startup "sleep 2 && QT_QPA_PLATFORMTHEME=gtk3 ${pkgs.dms-shell}/bin/dms restart"
   '';
 
-  home.sessionVariables = {
-    QT_QPA_PLATFORMTHEME = lib.mkForce "gtk3";
-  };
-
   dconf.settings."org/gnome/desktop/interface".color-scheme = lib.mkForce "prefer-dark";
 }

@@ -1,6 +1,5 @@
 { pkgs, ... }:
 {
-  home.packages = [ pkgs.noto-fonts-cjk-sans ];
   programs.kitty = {
     enable = true;
     themeFile = "Catppuccin-Mocha";

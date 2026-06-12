@@ -5,7 +5,6 @@
     nixfmt-tree
     git
     gdb
-    vim
     nano
   ];
   services.envfs.enable = true;
