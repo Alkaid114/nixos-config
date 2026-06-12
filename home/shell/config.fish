@@ -1,7 +1,6 @@
 if status is-interactive
     # Commands to run in interactive sessions can go here
     set fish_greeting ""
-    starship init fish | source
     # navi widget fish | source
     set -x NAVI_FZF_OVERRIDES "--height 20% --layout=reverse --border"
     # 重新自定义绑定
