@@ -16,8 +16,8 @@ in
   stylix.targets.fontconfig.enable = false;
   stylix.cursor = {
     size = 18;
-    package = pkgs.catppuccin-cursors.mochaDark;
-    name = "catppuccin-mocha-dark-cursors";
+    package = pkgs.kdePackages.breeze;
+    name = "breeze_cursors";
   };
   stylix.fonts = {
     serif = {

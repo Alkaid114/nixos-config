@@ -5,11 +5,11 @@
   ...
 }:
 {
+  nix.package = pkgs.lixPackageSets.stable.lix;
   nix.settings = {
     experimental-features = [
       "nix-command"
       "flakes"
-      "pipe-operators"
     ];
     substituters = [
       "https://mirrors.tuna.tsinghua.edu.cn/nix-channels/store"

@@ -24,7 +24,7 @@
       };
       systemd-boot.enable = true;
     };
-    kernelPackages = pkgs.linuxPackages_6_19;
+    kernelPackages = pkgs.linuxPackages_zen;
     kernel.sysctl = {
       "kernel.sysrq" = 1;
     };

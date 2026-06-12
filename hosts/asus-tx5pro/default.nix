@@ -48,7 +48,6 @@
   services = {
     asusd = {
       enable = true;
-      enableUserService = true;
     };
     power-profiles-daemon.enable = true;
     upower.enable = true;
