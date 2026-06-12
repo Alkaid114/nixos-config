@@ -3,7 +3,6 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    #nixpkgs.url = "git+https://mirrors.tuna.tsinghua.edu.cn/git/nixpkgs.git?ref=nixos-unstable&shallow=1";
     stylix.url = "github:nix-community/stylix";
     flake-parts.url = "github:hercules-ci/flake-parts";
 
@@ -31,11 +30,6 @@
       url = "github:0xc000022070/zen-browser-flake";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
-    # nixos-grub-themes = {
-    #   url = "github:jeslie0/nixos-grub-themes";
-    #   inputs.nixpkgs.follows = "nixpkgs";
-    # };
   };
 
   nixConfig = {
@@ -63,7 +57,12 @@
               specialArgs = { inherit username inputs; };
               modules = [
                 ./hosts/asus-tx5pro
-                ./os/desktop.nix
+                ./modules/system
+                ./modules/desktop
+                ./modules/desktop/baseline.nix
+                ./modules/develop
+                ./modules/gaming
+                ./modules/virtual
                 inputs.stylix.nixosModules.stylix
               ];
             };
@@ -75,7 +74,7 @@
               modules = [
                 "${inputs.nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-graphical-gnome.nix"
                 "${inputs.nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
-                ./os/program/proxy.nix
+                ./modules/desktop/proxy.nix
                 ./hosts/iso
               ];
             };

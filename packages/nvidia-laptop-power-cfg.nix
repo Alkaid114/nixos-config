@@ -1,6 +1,4 @@
-{
-  pkgs ? import <nixpkgs> { },
-}:
+{ pkgs }:
 
 pkgs.stdenv.mkDerivation rec {
   pname = "nvidia-laptop-power-cfg";
@@ -10,7 +8,7 @@ pkgs.stdenv.mkDerivation rec {
     owner = "asus-linux";
     repo = "nvidia-laptop-power-cfg";
     rev = "a73f9b9b51d732699aed5a631b54337fa061a683";
-    sha256 = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+    hash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
   };
 
   installPhase = ''

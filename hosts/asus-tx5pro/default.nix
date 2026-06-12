@@ -2,16 +2,19 @@
   ...
 }:
 # let
-#   nvidia-cfg = pkgs.callPackage ../../hardware/nvidia-laptop-power-cfg.nix {};
+#   nvidia-cfg = pkgs.callPackage ../../packages/nvidia-laptop-power-cfg.nix {};
 # in
 {
   imports = [
     ./hardware-configuration.nix
-    ../../hardware/bluetooth.nix
-    ../../hardware/amdgpu.nix
-    ../../hardware/nvidia.nix
-    ../../hardware/wifi.nix
-    ../../hardware/common.nix
+    ../../modules/hardware/bluetooth.nix
+    ../../modules/hardware/amdgpu.nix
+    ../../modules/hardware/nvidia.nix
+    ../../modules/hardware/wifi.nix
+    ../../modules/hardware/common.nix
+    ../../modules/hardware/keyboard.nix
+    ../../modules/hardware/audio.nix
+    ../../modules/hardware/printing.nix
   ];
 
   # services.udev.packages = [ nvidia-cfg ];

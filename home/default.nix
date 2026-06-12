@@ -1,19 +1,10 @@
 { pkgs, ... }:
 {
   imports = [
-    ./fcitx5.nix
+    ./desktop
     ./shell
-    ./kitty.nix
-    ./niri
-    ./stylix.nix
     ./coding
-    ./social.nix
-    ./tools.nix
-    ./gaming.nix
-    ./kanshi.nix
-    ./fuzzel.nix
-    ./theme.nix
-    ./dms-shell.nix
+    ./gaming
   ];
 
   home.sessionVariables = {

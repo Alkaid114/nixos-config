@@ -12,7 +12,7 @@
     useNautilus = true;
     package = pkgs.niri.overrideAttrs (oldAttrs: rec {
       patches = (oldAttrs.patches or [ ]) ++ [
-        ./patches/niri-shm-2604.patch
+        ../../patches/niri-shm-2604.patch
       ];
     });
   };
