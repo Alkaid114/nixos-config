@@ -3,6 +3,6 @@
   home.packages = with pkgs; [
     qq
     feishu
-    wechat
+    # wechat
   ];
 }

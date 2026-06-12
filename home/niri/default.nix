@@ -5,13 +5,7 @@
 }:
 let
   gpuSelectfuzzel = pkgs.writeShellScript "fuzzel-gpu-select" ''
-    export PATH="${
-      pkgs.lib.makeBinPath [
-        pkgs.niri
-        pkgs.gnugrep
-        pkgs.coreutils
-      ]
-    }:$PATH"
+    exec env PATH=${lib.makeBinPath [ pkgs.niri pkgs.gnugrep pkgs.coreutils ]}:$PATH "$@"
 
     export PATH="$PATH:/run/current-system/sw/bin:$HOME/.nix-profile/bin"
 
