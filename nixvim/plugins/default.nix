@@ -9,5 +9,6 @@
     ./comment.nix
     ./lualine.nix
     ./which-key.nix
+    ./noice.nix
   ];
 }
