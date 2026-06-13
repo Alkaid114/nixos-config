@@ -93,12 +93,16 @@
 
           nixosModules.nixvim = { ... }: {
             imports = [ inputs.nixvim.nixosModules.nixvim ];
-            programs.nixvim = myNixvimConfig;
+            programs.nixvim = myNixvimConfig // {
+              enable = true;
+            };
           };
 
           homeModules.nixvim = { ... }: {
             imports = [ inputs.nixvim.homeManagerModules.nixvim ];
-            programs.nixvim = myNixvimConfig;
+            programs.nixvim = myNixvimConfig // {
+              enable = true;
+            };
           };
 
           homeConfigurations = {
