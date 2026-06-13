@@ -42,10 +42,8 @@ in
     matugen
   ];
   programs.cava.enable = true;
-  xdg.configFile."niri/config.kdl".text = 
-    builtins.readFile ./config.kdl
-    + "\n"
-    + "include optional=true \"fuzzel.kdl\"\n";
+  xdg.configFile."niri/config.kdl".text =
+    builtins.readFile ./config.kdl + "\n" + "include optional=true \"fuzzel.kdl\"\n";
   xdg.configFile."niri/fuzzel.kdl".text = ''
     binds {
         Mod+D { spawn-sh "fuzzel --launch-prefix=${gpuSelectfuzzel}"; }

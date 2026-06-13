@@ -133,7 +133,6 @@ environment {
 }
 
 spawn-at-startup "kanshi"
-spawn-sh-at-startup "QT_QPA_PLATFORMTHEME=gtk3 dms restart"
 
 hotkey-overlay {
     skip-at-startup
