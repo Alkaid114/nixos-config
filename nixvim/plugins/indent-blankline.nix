@@ -3,15 +3,10 @@
     enable = true;
 
     settings = {
-      indent = {
-        char = "│";
-        tab_char = "│";
-      };
-      scope = {
-        enabled = true;
-        show_start = true;
-        show_end = true;
-      };
+      indent.char = "";
+      scope.enabled = true;
+      scope.show_start = true;
+      scope.show_end = true;
     };
   };
 }
