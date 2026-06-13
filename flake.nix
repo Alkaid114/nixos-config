@@ -74,7 +74,6 @@
                 ./modules/gaming
                 ./modules/virtual
                 inputs.stylix.nixosModules.stylix
-                self.nixosModules.nixvim
               ];
             };
             iso = inputs.nixpkgs.lib.nixosSystem {
@@ -91,19 +90,9 @@
             };
           };
 
-          nixosModules.nixvim = { ... }: {
-            imports = [ inputs.nixvim.nixosModules.nixvim ];
-            programs.nixvim = myNixvimConfig // {
-              enable = true;
-            };
-          };
+          nixosModules.nixvim = import ./modules/desktop/nixvim.nix;
 
-          homeModules.nixvim = { ... }: {
-            imports = [ inputs.nixvim.homeManagerModules.nixvim ];
-            programs.nixvim = myNixvimConfig // {
-              enable = true;
-            };
-          };
+          homeModules.nixvim = import ./home/coding/nixvim.nix;
 
           homeConfigurations = {
             alkaid = inputs.home-manager.lib.homeManagerConfiguration {
@@ -122,7 +111,6 @@
                   };
                 }
                 inputs.stylix.homeModules.stylix
-                self.homeModules.nixvim
               ];
             };
           };
