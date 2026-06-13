@@ -52,18 +52,48 @@
       };
       formatters_by_ft = {
         nix = [ "nixfmt" ];
-        python = [ "isort" "black" ];
+        python = [
+          "isort"
+          "black"
+        ];
         rust = [ "rustfmt" ];
         lua = [ "stylua" ];
-        javascript = [ "prettierd" "prettier" ];
-        typescript = [ "prettierd" "prettier" ];
-        javascriptreact = [ "prettierd" "prettier" ];
-        typescriptreact = [ "prettierd" "prettier" ];
-        json = [ "prettierd" "prettier" ];
-        yaml = [ "prettierd" "prettier" ];
-        markdown = [ "prettierd" "prettier" ];
-        html = [ "prettierd" "prettier" ];
-        css = [ "prettierd" "prettier" ];
+        javascript = [
+          "prettierd"
+          "prettier"
+        ];
+        typescript = [
+          "prettierd"
+          "prettier"
+        ];
+        javascriptreact = [
+          "prettierd"
+          "prettier"
+        ];
+        typescriptreact = [
+          "prettierd"
+          "prettier"
+        ];
+        json = [
+          "prettierd"
+          "prettier"
+        ];
+        yaml = [
+          "prettierd"
+          "prettier"
+        ];
+        markdown = [
+          "prettierd"
+          "prettier"
+        ];
+        html = [
+          "prettierd"
+          "prettier"
+        ];
+        css = [
+          "prettierd"
+          "prettier"
+        ];
       };
     };
   };
