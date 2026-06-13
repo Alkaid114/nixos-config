@@ -33,6 +33,11 @@
       url = "github:0xc000022070/zen-browser-flake";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    nixvim = {
+      url = "github:nix-community/nixvim";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   nixConfig = {
@@ -46,7 +51,10 @@
   };
 
   outputs =
-    inputs@{ flake-parts, ... }:
+    { self, flake-parts, ... }@inputs:
+    let
+      myNixvimConfig = import ./nixvim;
+    in
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems = [ "x86_64-linux" ];
 
@@ -67,6 +75,7 @@
                 ./modules/gaming
                 ./modules/virtual
                 inputs.stylix.nixosModules.stylix
+                self.nixosModules.nixvim
               ];
             };
             iso = inputs.nixpkgs.lib.nixosSystem {
@@ -81,6 +90,16 @@
                 ./hosts/iso
               ];
             };
+          };
+
+          nixosModules.nixvim = { ... }: {
+            imports = [ inputs.nixvim.nixosModules.nixvim ];
+            programs.nixvim = myNixvimConfig;
+          };
+
+          homeModules.nixvim = { ... }: {
+            imports = [ inputs.nixvim.homeManagerModules.nixvim ];
+            programs.nixvim = myNixvimConfig;
           };
 
           homeConfigurations = {
@@ -100,14 +119,20 @@
                   };
                 }
                 inputs.stylix.homeModules.stylix
+                self.homeModules.nixvim
               ];
             };
           };
         };
       perSystem =
-        { pkgs, ... }:
+        { pkgs, system, ... }:
         {
           formatter = pkgs.nixfmt-tree;
+
+          packages.nixvim = inputs.nixvim.lib.evalNixvim {
+            inherit system;
+            modules = [ myNixvimConfig ];
+          }.config.build.package;
         };
     };
 }

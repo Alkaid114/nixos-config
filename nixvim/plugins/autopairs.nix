@@ -1,0 +1,5 @@
+{
+  plugins.autopairs = {
+    enable = true;
+  };
+}
