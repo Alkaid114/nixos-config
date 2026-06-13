@@ -42,10 +42,9 @@
 
   nixConfig = {
     substituters = [
-      "https://mirrors.sjtug.sjtu.edu.cn/nix-channels/store"
+      "https://cache.nixos.org"
       "https://mirrors.nju.edu.cn/nix-channels/store"
       "https://mirrors.tuna.tsinghua.edu.cn/nix-channels/store"
-      "https://cache.nixos.org"
     ];
     trusted-public-keys = [ "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=" ];
   };
@@ -129,10 +128,10 @@
         {
           formatter = pkgs.nixfmt-tree;
 
-          packages.nixvim = inputs.nixvim.lib.evalNixvim {
+          packages.nixvim = inputs.nixvim.lib.nixvim.modules.buildNixvimWith {
             inherit system;
             modules = [ myNixvimConfig ];
-          }.config.build.package;
+          };
         };
     };
 }

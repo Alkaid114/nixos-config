@@ -71,14 +71,16 @@
   plugins.lspkind = {
     enable = true;
 
-    cmp = {
-      enable = true;
-      menu = {
-        nvim_lsp = "[LSP]";
-        nvim_lua = "[Lua]";
-        luasnip = "[Snip]";
-        buffer = "[Buf]";
-        path = "[Path]";
+    settings = {
+      cmp = {
+        enable = true;
+        menu = {
+          nvim_lsp = "[LSP]";
+          nvim_lua = "[Lua]";
+          luasnip = "[Snip]";
+          buffer = "[Buf]";
+          path = "[Path]";
+        };
       };
     };
   };
