@@ -31,11 +31,8 @@
         K = "vim.lsp.buf.hover";
         gi = "vim.lsp.buf.implementation";
         gr = "vim.lsp.buf.references";
-        "<leader>ca" = "vim.lsp.buf.code_action";
-        "<leader>rn" = "vim.lsp.buf.rename";
       };
       diagnostic = {
-        "<leader>cd" = "vim.diagnostic.open_float";
         "[d" = "vim.diagnostic.goto_prev";
         "]d" = "vim.diagnostic.goto_next";
       };
