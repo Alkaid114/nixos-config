@@ -10,5 +10,6 @@
     ./lualine.nix
     ./which-key.nix
     ./noice.nix
+    ./indent-blankline.nix
   ];
 }
