@@ -5,6 +5,6 @@
     enableFishIntegration = true;
     enableZshIntegration = true;
     enableInteractive = true;
-    settings = lib.importTOML ../dotfiles/.config/starship.toml;
+    settings = lib.importTOML ./starship.toml;
   };
 }
