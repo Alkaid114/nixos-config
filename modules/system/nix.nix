@@ -12,7 +12,6 @@
       "flakes"
     ];
     substituters = [
-      "https://mirrors.sjtug.sjtu.edu.cn/nix-channels/store"
       "https://mirrors.nju.edu.cn/nix-channels/store"
       "https://mirrors.tuna.tsinghua.edu.cn/nix-channels/store"
     ];

@@ -90,9 +90,19 @@
             };
           };
 
-          nixosModules.nixvim = import ./modules/desktop/nixvim.nix;
+          nixosModules.nixvim = { inputs, ... }: {
+            imports = [ inputs.nixvim.nixosModules.nixvim ];
+            programs.nixvim = myNixvimConfig // {
+              enable = true;
+            };
+          };
 
-          homeModules.nixvim = import ./home/coding/nixvim.nix;
+          homeModules.nixvim = { inputs, ... }: {
+            imports = [ inputs.nixvim.homeManagerModules.nixvim ];
+            programs.nixvim = myNixvimConfig // {
+              enable = true;
+            };
+          };
 
           homeConfigurations = {
             alkaid = inputs.home-manager.lib.homeManagerConfiguration {
@@ -111,6 +121,7 @@
                   };
                 }
                 inputs.stylix.homeModules.stylix
+                self.homeModules.nixvim
               ];
             };
           };

@@ -7,7 +7,6 @@
   imports = [
     ./git.nix
     ./vscode.nix
-    ./nixvim.nix
   ];
 
   home.packages = with pkgs; [

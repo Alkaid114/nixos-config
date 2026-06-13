@@ -10,6 +10,5 @@
     ./fonts.nix
     ./stylix.nix
     ./plymouth.nix
-    ./nixvim.nix
   ];
 }
