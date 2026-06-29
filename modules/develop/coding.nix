@@ -5,7 +5,6 @@
     nixfmt-tree
     git
     gdb
-    nano
   ];
   services.envfs.enable = true;
   programs.nix-ld = {

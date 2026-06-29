@@ -27,11 +27,7 @@
   ];
 
   environment.systemPackages = with pkgs; [
-    acpi
-    libva
     libva-utils
-    mesa
-    libva-vdpau-driver
     vdpauinfo
   ];
 }

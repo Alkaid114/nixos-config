@@ -5,6 +5,5 @@
   security.polkit.enable = true;
   environment.systemPackages = with pkgs; [
     btrfs-progs
-    mesa-demos
   ];
 }

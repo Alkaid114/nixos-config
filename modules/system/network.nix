@@ -29,13 +29,4 @@
   environment.systemPackages = with pkgs; [
     firewalld-gui
   ];
-  # services.openssh = {
-  #   enable = false;
-  #   settings = {
-  #     X11Forwarding = false;
-  #     PermitRootLogin = "no";
-  #     PasswordAuthentication = false;
-  #   };
-  #   openFirewall = true;
-  # };
 }

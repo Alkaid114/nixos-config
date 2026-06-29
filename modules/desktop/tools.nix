@@ -13,9 +13,6 @@
     file
     which
     tree
-    gnused
-    gnutar
-    gawk
     zstd
     gnupg
     htop

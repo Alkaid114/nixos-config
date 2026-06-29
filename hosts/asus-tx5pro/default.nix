@@ -11,7 +11,6 @@
     ../../modules/hardware/amdgpu.nix
     ../../modules/hardware/nvidia.nix
     ../../modules/hardware/wifi.nix
-    ../../modules/hardware/common.nix
     ../../modules/hardware/keyboard.nix
     ../../modules/hardware/audio.nix
     ../../modules/hardware/printing.nix

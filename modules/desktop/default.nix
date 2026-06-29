@@ -1,7 +1,8 @@
 { ... }:
 {
   imports = [
-    ./base.nix
+    ./infra.nix
+    ./tools.nix
     ./browser.nix
     ./niri.nix
     ./dm.nix

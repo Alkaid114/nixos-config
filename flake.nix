@@ -40,15 +40,6 @@
     };
   };
 
-  nixConfig = {
-    substituters = [
-      "https://cache.nixos.org"
-      "https://mirrors.nju.edu.cn/nix-channels/store"
-      "https://mirrors.tuna.tsinghua.edu.cn/nix-channels/store"
-    ];
-    trusted-public-keys = [ "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=" ];
-  };
-
   outputs =
     { self, flake-parts, ... }@inputs:
     let
@@ -69,7 +60,6 @@
                 ./hosts/asus-tx5pro
                 ./modules/system
                 ./modules/desktop
-                ./modules/desktop/baseline.nix
                 ./modules/develop
                 ./modules/gaming
                 ./modules/virtual
