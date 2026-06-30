@@ -75,43 +75,43 @@ gen-hardware: ## generate hardware-config & write into this flake
 
 check-hardware: ## verify hardware-config has been regenerated for this host
 	@if ! findmnt $(MNT) > /dev/null 2>&1; then \
-		echo "\033[31mERROR: $(MNT) is not a mount point. Mount your root partition to $(MNT) first.\033[0m"; \
+		printf "\033[31mERROR: %s is not a mount point. Mount your root partition to %s first.\033[0m\n" "$(MNT)" "$(MNT)"; \
 		exit 1; \
 	fi
 	@if findmnt -o FSTYPE -n $(MNT) | grep -q tmpfs; then \
-		echo "\033[31mERROR: $(MNT) is tmpfs (livecd root), not your target root. Mount your root partition first.\033[0m"; \
+		printf "\033[31mERROR: %s is tmpfs (livecd root), not your target root. Mount your root partition first.\033[0m\n" "$(MNT)"; \
 		exit 1; \
 	fi
 	@if [ ! -f hosts/$(HOST)/.hardware-generated ]; then \
-		echo "\033[31mERROR: Run 'make gen-hardware' first to generate hardware configuration for this host.\033[0m"; \
+		printf "\033[31mERROR: Run 'make gen-hardware' first to generate hardware configuration for this host.\033[0m\n"; \
 		exit 1; \
 	fi
 
 install: check-hardware copy-flake ## check, copy, then install (run after gen-hardware)
 	@echo ""
 	@echo "Mounts under $(MNT):"
-	@findmnt --df -R $(MNT) 2>/dev/null || findmnt -R $(MNT)
+	@findmnt -R $(MNT)
 	@echo ""
 	@echo "Disk info for mounted devices:"
-	@sudo findmnt -R $(MNT) -o SOURCE -n | sort -u | \
-		xargs -r lsblk -o NAME,MODEL,SIZE,TYPE,FSTYPE,MOUNTPOINT 2>/dev/null || true
+	@disks=$$(sudo findmnt -R $(MNT) -o SOURCE -n | sort -u | \
+		xargs -r lsblk -ndo PKNAME 2>/dev/null | sort -u); \
+		if [ -n "$$disks" ]; then \
+			lsblk -o NAME,MODEL,SIZE,TYPE,FSTYPE,MOUNTPOINT $$disks; \
+		fi
 	@echo ""
-	@echo "All block devices:"
-	@lsblk -f
-	@echo ""
-	@echo -n "Confirm mounts are correct and continue? [y/N] "; \
+	@printf "Confirm mounts are correct and continue? [y/N] "; \
 		read ans; \
 		case "$$ans" in \
 			y|Y) ;; \
-			*) echo "Aborted."; exit 1;; \
+			*) printf "Aborted.\n"; exit 1;; \
 		esac
 	@if [ ! -f $(MNT)/etc/nixos/flake.nix ]; then \
-		echo "\033[31mERROR: flake.nix not found at $(MNT)/etc/nixos/. copy-flake may have failed.\033[0m"; \
+		printf "\033[31mERROR: flake.nix not found at %s/etc/nixos/. copy-flake may have failed.\033[0m\n" "$(MNT)"; \
 		exit 1; \
 	fi
 	sudo nixos-install \
 		--root $(MNT) \
-		--flake /etc/nixos#$(HOST)
+		--flake $(MNT)/etc/nixos#$(HOST)
 
 # — Utility —
 help:         ## show this help
