@@ -7,7 +7,7 @@ MNT = /mnt
         switch-hm test-hm build-hm \
         update update-input format check \
         gc optimise show \
-        copy-flake gen-hardware check-hardware install
+        copy-flake gen-hardware check-hardware confirm-mounts install
 
 # — NixOS —
 switch:   ## rebuild & switch to new generation
@@ -60,6 +60,7 @@ optimise:     ## deduplicate nix store
 # — LiveCD Deployment —
 
 copy-flake:  ## copy flake to target (exclude .git, result, .direnv)
+	sudo mkdir -p $(MNT)/etc/nixos
 	sudo rsync -a --delete \
 		--exclude=.git \
 		--exclude=result \
@@ -67,13 +68,13 @@ copy-flake:  ## copy flake to target (exclude .git, result, .direnv)
 		--exclude=.hardware-generated \
 		$(CURDIR)/ $(MNT)/etc/nixos/
 
-gen-hardware: ## generate hardware-config & write into this flake
+gen-hardware: confirm-mounts ## generate hardware-config & write into this flake
 	rm -f hosts/$(HOST)/.hardware-generated
 	sudo nixos-generate-config --root $(MNT)
 	sudo cat $(MNT)/etc/nixos/hardware-configuration.nix > hosts/$(HOST)/hardware-configuration.nix
 	touch hosts/$(HOST)/.hardware-generated
 
-check-hardware: ## verify hardware-config has been regenerated for this host
+check-hardware:
 	@if ! findmnt $(MNT) > /dev/null 2>&1; then \
 		printf "\033[31mERROR: %s is not a mount point. Mount your root partition to %s first.\033[0m\n" "$(MNT)" "$(MNT)"; \
 		exit 1; \
@@ -87,7 +88,15 @@ check-hardware: ## verify hardware-config has been regenerated for this host
 		exit 1; \
 	fi
 
-install: check-hardware copy-flake ## check, copy, then install (run after gen-hardware)
+confirm-mounts:
+	@if ! findmnt $(MNT) > /dev/null 2>&1; then \
+		printf "\033[31mERROR: %s is not a mount point. Mount your root partition to %s first.\033[0m\n" "$(MNT)" "$(MNT)"; \
+		exit 1; \
+	fi
+	@if findmnt -o FSTYPE -n $(MNT) | grep -q tmpfs; then \
+		printf "\033[31mERROR: %s is tmpfs (livecd root), not your target root. Mount your root partition first.\033[0m\n" "$(MNT)"; \
+		exit 1; \
+	fi
 	@echo ""
 	@echo "Mounts under $(MNT):"
 	@findmnt -R $(MNT)
@@ -96,7 +105,7 @@ install: check-hardware copy-flake ## check, copy, then install (run after gen-h
 	@disks=$$(sudo findmnt -R $(MNT) -o SOURCE -n | sort -u | \
 		xargs -r lsblk -ndo PKNAME 2>/dev/null | sort -u); \
 		if [ -n "$$disks" ]; then \
-			lsblk -o NAME,MODEL,SIZE,TYPE,FSTYPE,MOUNTPOINT $$disks; \
+			sudo lsblk -o NAME,MODEL,SIZE,TYPE,FSTYPE,MOUNTPOINT $$disks; \
 		fi
 	@echo ""
 	@printf "Confirm mounts are correct and continue? [y/N] "; \
@@ -105,6 +114,8 @@ install: check-hardware copy-flake ## check, copy, then install (run after gen-h
 			y|Y) ;; \
 			*) printf "Aborted.\n"; exit 1;; \
 		esac
+
+install: check-hardware confirm-mounts copy-flake ## check, confirm, copy, then install (run after gen-hardware)
 	@if [ ! -f $(MNT)/etc/nixos/flake.nix ]; then \
 		printf "\033[31mERROR: flake.nix not found at %s/etc/nixos/. copy-flake may have failed.\033[0m\n" "$(MNT)"; \
 		exit 1; \
