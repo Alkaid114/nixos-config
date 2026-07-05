@@ -32,9 +32,6 @@ let
   '';
 in
 {
-  imports = [
-    ./wallpaper.nix
-  ];
   # services.polkit-gnome.enable = true;
   services.hyprpolkitagent.enable = true;
   services.gnome-keyring.enable = true;
