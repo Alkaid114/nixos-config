@@ -33,18 +33,10 @@
       url = "github:0xc000022070/zen-browser-flake";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
-    nixvim = {
-      url = "github:nix-community/nixvim";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
   outputs =
     { self, flake-parts, ... }@inputs:
-    let
-      myNixvimConfig = import ./nixvim;
-    in
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems = [ "x86_64-linux" ];
 
@@ -80,22 +72,6 @@
             };
           };
 
-          nixosModules.nixvim = { inputs, ... }: {
-            imports = [ inputs.nixvim.nixosModules.nixvim ];
-            programs.nixvim = myNixvimConfig // {
-              enable = true;
-              nixpkgs.source = inputs.nixpkgs;
-            };
-          };
-
-          homeModules.nixvim = { inputs, ... }: {
-            imports = [ inputs.nixvim.homeModules.nixvim ];
-            programs.nixvim = myNixvimConfig // {
-              enable = true;
-              nixpkgs.source = inputs.nixpkgs;
-            };
-          };
-
           homeConfigurations = {
             alkaid = inputs.home-manager.lib.homeManagerConfiguration {
               extraSpecialArgs = { inherit inputs username; };
@@ -113,7 +89,6 @@
                   };
                 }
                 inputs.stylix.homeModules.stylix
-                self.homeModules.nixvim
               ];
             };
           };
@@ -122,11 +97,6 @@
         { pkgs, system, ... }:
         {
           formatter = pkgs.nixfmt-tree;
-
-          packages.nixvim = inputs.nixvim.lib.nixvim.modules.buildNixvimWith {
-            inherit system;
-            modules = [ myNixvimConfig ];
-          };
         };
     };
 }

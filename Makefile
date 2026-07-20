@@ -3,7 +3,7 @@ HOST = asus-tx5pro
 USER = alkaid
 MNT = /mnt
 
-.PHONY: switch test boot build-nixvim run-nixvim \
+.PHONY: switch test boot \
         switch-hm test-hm build-hm \
         update update-input format check \
         gc optimise show \
@@ -20,12 +20,6 @@ test:     ## build but don't switch (activates in memory)
 
 boot:     ## rebuild & set as boot default
 	sudo nixos-rebuild boot --flake $(FLAKE)#$(HOST)
-
-build-nixvim:  ## build standalone nixvim
-	nix build $(FLAKE)#nixvim
-
-run-nixvim:    ## run standalone nixvim
-	nix run $(FLAKE)#nixvim
 
 # — Home Manager —
 switch-hm:    ## rebuild home-manager
