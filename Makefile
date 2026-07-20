@@ -9,6 +9,8 @@ MNT = /mnt
         gc optimise show \
         copy-flake gen-hardware check-hardware confirm-mounts install
 
+.DEFAULT_GOAL := help
+
 # — NixOS —
 switch:   ## rebuild & switch to new generation
 	sudo nixos-rebuild switch --flake $(FLAKE)#$(HOST)

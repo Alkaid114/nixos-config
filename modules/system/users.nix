@@ -10,8 +10,6 @@
       "networkmanager"
       "wheel"
       "audio"
-      "power"
-      "storage"
       "video"
       "render"
       "input"
