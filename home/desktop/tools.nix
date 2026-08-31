@@ -5,11 +5,11 @@
     [
       libreoffice-fresh
       mpv
-      gparted
     ]
     ++ (with kdePackages; [
       okular
       gwenview
       filelight
+      partitionmanager
     ]);
 }
