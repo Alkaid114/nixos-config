@@ -5,6 +5,7 @@
     nixfmt-tree
     git
     gdb
+    gnumake
   ];
   services.envfs.enable = true;
   programs.nix-ld = {

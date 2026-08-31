@@ -8,7 +8,6 @@
 {
   nix.registry.nixpkgs.flake = inputs.nixpkgs;
   nix.nixPath = [ "nixpkgs=${inputs.nixpkgs}" ];
-  nix.package = pkgs.lixPackageSets.stable.lix;
   nix.settings = {
     experimental-features = [
       "nix-command"
