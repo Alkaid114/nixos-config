@@ -12,6 +12,7 @@
       ];
     };
     firewall.enable = false;
+    nftables.enable = true;
   };
   services.firewalld = {
     enable = true;
