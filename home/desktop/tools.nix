@@ -3,7 +3,7 @@
   home.packages =
     with pkgs;
     [
-      libreoffice-fresh
+      libreoffice
       mpv
     ]
     ++ (with kdePackages; [
