@@ -10,6 +10,7 @@ in
     dank-material-shell.enable = false;
     fcitx5.enable = false;
     starship.enable = false;
+    fish.enable = false;
   };
   stylix.polarity = "dark";
   stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/${theme}.yaml";
