@@ -11,5 +11,6 @@
     ./fonts.nix
     ./stylix.nix
     ./plymouth.nix
+    ./noctalia.nix
   ];
 }
