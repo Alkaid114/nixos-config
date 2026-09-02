@@ -7,120 +7,70 @@ MNT = /mnt
         switch-hm test-hm build-hm \
         update update-input format check \
         gc optimise show \
-        copy-flake gen-hardware check-hardware confirm-mounts install
+        copy-flake gen-hardware check-hardware confirm-mounts install \
+        help
 
 .DEFAULT_GOAL := help
 
 # — NixOS —
 switch:   ## rebuild & switch to new generation
-	sudo nixos-rebuild switch --flake $(FLAKE)#$(HOST)
+	@scripts/nix.sh switch
 
 test:     ## build but don't switch (activates in memory)
-	sudo nixos-rebuild test --flake $(FLAKE)#$(HOST)
+	@scripts/nix.sh test
 
 boot:     ## rebuild & set as boot default
-	sudo nixos-rebuild boot --flake $(FLAKE)#$(HOST)
+	@scripts/nix.sh boot
 
 # — Home Manager —
 switch-hm:    ## rebuild home-manager
-	home-manager switch --flake $(FLAKE)#$(USER)
+	@scripts/nix.sh switch-hm
 
 test-hm:      ## build & activate for current session only
-	home-manager test --flake $(FLAKE)#$(USER)
+	@scripts/nix.sh test-hm
 
 build-hm:     ## build without activating
-	home-manager build --flake $(FLAKE)#$(USER)
+	@scripts/nix.sh build-hm
 
 # — Flake Management —
 update:       ## update all flake inputs
-	nix flake update --flake $(FLAKE)
+	@scripts/nix.sh update
 
 update-input: ## update a specific input (usage: make update-input name=nixpkgs)
-	nix flake lock --flake $(FLAKE) --update-input $(name)
+	@scripts/nix.sh update-input $(name)
 
 format:       ## format all .nix files
-	nix fmt $(FLAKE)
+	@scripts/nix.sh format
 
 check:        ## evaluate flake & check for errors
-	nix flake check --flake $(FLAKE)
+	@scripts/nix.sh check
 
 show:         ## show flake outputs
-	nix flake show --flake $(FLAKE)
+	@scripts/nix.sh show
 
 # — Store Maintenance —
 gc:           ## garbage collect old generations
-	sudo nix-collect-garbage -d && nix-collect-garbage -d
+	@scripts/nix.sh gc
 
 optimise:     ## deduplicate nix store
-	nix store optimise
+	@scripts/nix.sh optimise
+
 # — LiveCD Deployment —
-
 copy-flake:  ## copy flake to target (exclude .git, result, .direnv)
-	sudo mkdir -p $(MNT)/etc/nixos
-	sudo rsync -a --delete \
-		--exclude=.git \
-		--exclude=result \
-		--exclude=.direnv \
-		--exclude=.hardware-generated \
-		$(CURDIR)/ $(MNT)/etc/nixos/
+	@scripts/nix.sh copy-flake
 
-gen-hardware: confirm-mounts ## generate hardware-config & write into this flake
-	rm -f hosts/$(HOST)/.hardware-generated
-	sudo nixos-generate-config --root $(MNT)
-	sudo cat $(MNT)/etc/nixos/hardware-configuration.nix > hosts/$(HOST)/hardware-configuration.nix
-	touch hosts/$(HOST)/.hardware-generated
+gen-hardware: ## generate hardware-config & write into this flake
+	@scripts/nix.sh gen-hardware
 
 check-hardware:
-	@if ! findmnt $(MNT) > /dev/null 2>&1; then \
-		printf "\033[31mERROR: %s is not a mount point. Mount your root partition to %s first.\033[0m\n" "$(MNT)" "$(MNT)"; \
-		exit 1; \
-	fi
-	@if findmnt -o FSTYPE -n $(MNT) | grep -q tmpfs; then \
-		printf "\033[31mERROR: %s is tmpfs (livecd root), not your target root. Mount your root partition first.\033[0m\n" "$(MNT)"; \
-		exit 1; \
-	fi
-	@if [ ! -f hosts/$(HOST)/.hardware-generated ]; then \
-		printf "\033[31mERROR: Run 'make gen-hardware' first to generate hardware configuration for this host.\033[0m\n"; \
-		exit 1; \
-	fi
+	@scripts/nix.sh check-hardware
 
 confirm-mounts:
-	@if ! findmnt $(MNT) > /dev/null 2>&1; then \
-		printf "\033[31mERROR: %s is not a mount point. Mount your root partition to %s first.\033[0m\n" "$(MNT)" "$(MNT)"; \
-		exit 1; \
-	fi
-	@if findmnt -o FSTYPE -n $(MNT) | grep -q tmpfs; then \
-		printf "\033[31mERROR: %s is tmpfs (livecd root), not your target root. Mount your root partition first.\033[0m\n" "$(MNT)"; \
-		exit 1; \
-	fi
-	@echo ""
-	@echo "Mounts under $(MNT):"
-	@findmnt -R $(MNT)
-	@echo ""
-	@echo "Disk info for mounted devices:"
-	@disks=$$(sudo findmnt -R $(MNT) -o SOURCE -n | sort -u | \
-		xargs -r lsblk -ndo PKNAME 2>/dev/null | sort -u); \
-		if [ -n "$$disks" ]; then \
-			sudo lsblk -o NAME,MODEL,SIZE,TYPE,FSTYPE,MOUNTPOINT $$disks; \
-		fi
-	@echo ""
-	@printf "Confirm mounts are correct and continue? [y/N] "; \
-		read ans; \
-		case "$$ans" in \
-			y|Y) ;; \
-			*) printf "Aborted.\n"; exit 1;; \
-		esac
+	@scripts/nix.sh confirm-mounts
 
-install: check-hardware confirm-mounts copy-flake ## check, confirm, copy, then install (run after gen-hardware)
-	@if [ ! -f $(MNT)/etc/nixos/flake.nix ]; then \
-		printf "\033[31mERROR: flake.nix not found at %s/etc/nixos/. copy-flake may have failed.\033[0m\n" "$(MNT)"; \
-		exit 1; \
-	fi
-	sudo nixos-install \
-		--root $(MNT) \
-		--flake $(MNT)/etc/nixos#$(HOST)
+install: ## check, confirm, copy, then install (run after gen-hardware)
+	@scripts/nix.sh install
 
 # — Utility —
 help:         ## show this help
-	@sed -n 's/^# — \(.*\) —$$/\n\1/p; s/^\([a-zA-Z_-]*\):.*## \(.*\)$$/\1\t\2/p' $(MAKEFILE_LIST) | \
-		awk -F'\t' 'NF==1 {print "\n\033[1m" $$0 "\033[0m"} NF==2 {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
+	@scripts/nix.sh help
