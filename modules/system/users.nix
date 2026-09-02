@@ -13,6 +13,7 @@
       "video"
       "render"
       "input"
+      "podman"
     ];
   };
 }
