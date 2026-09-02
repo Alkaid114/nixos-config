@@ -25,6 +25,7 @@
     nvtopPackages.amd
     nvtopPackages.nvidia
     nvtopPackages.intel
+    kdePackages.partitionmanager
   ];
 
   programs.obs-studio = {

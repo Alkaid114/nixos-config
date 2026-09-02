@@ -10,6 +10,5 @@
       okular
       gwenview
       filelight
-      partitionmanager
     ]);
 }
