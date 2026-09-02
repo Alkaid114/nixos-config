@@ -9,11 +9,9 @@ $directory\
 $git_branch\
 $git_status\
 $container\
+$nix_shell\
 $conda\
-$line_break\
-$character"""
-
-right_format = """
+$fill\
 $c\
 $cpp\
 $cmake\
@@ -27,10 +25,18 @@ $haskell\
 $python\
 $git_state\
 $time\
-$cmd_duration
-"""
+$cmd_duration\
+$line_break\
+$character"""
+
+# right_format = """
+
+# """
 
 palette = 'catppuccin_mocha'
+
+[fill]
+symbol = " "
 
 [os]
 disabled = false
@@ -163,6 +169,14 @@ ignore_base = false
 symbol = "  "
 style = "fg:sapphire"
 format = 'at[$symbol$name ]($style)'
+
+[nix_shell]
+symbol = " "
+style = "fg:blue"
+impure_msg = '[impure](fg:red)'
+pure_msg = '[pure](fg:green)'
+unknown_msg = '[unknown](fg:yellow)'
+format = 'via [$symbol$state](fg:blue) '
 
 [time]
 disabled = false
