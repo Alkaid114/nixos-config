@@ -11,5 +11,6 @@
     ./stylix.nix
     ./theme.nix
     ./tools.nix
+    ./wallpaper.nix
   ];
 }
