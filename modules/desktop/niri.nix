@@ -1,7 +1,5 @@
 {
   pkgs,
-  inputs,
-  config,
   ...
 }:
 {
@@ -10,7 +8,7 @@
   programs.niri = {
     enable = true;
     useNautilus = true;
-    package = pkgs.niri.overrideAttrs (oldAttrs: rec {
+    package = pkgs.niri.overrideAttrs (oldAttrs: {
       patches = (oldAttrs.patches or [ ]) ++ [
         ../../patches/niri-shm-2604.patch
       ];
@@ -42,15 +40,5 @@
       ];
     };
     mime.enable = true;
-  };
-
-  programs.uwsm = {
-    enable = true;
-    waylandCompositors = {
-      niri = {
-        prettyName = "Niri";
-        binPath = "${pkgs.niri}/bin/niri-session";
-      };
-    };
   };
 }

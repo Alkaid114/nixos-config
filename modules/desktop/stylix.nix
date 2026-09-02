@@ -11,4 +11,5 @@ in
   stylix.targets.fontconfig.enable = false;
   stylix.targets.plymouth.colors.enable = false;
   stylix.targets.plymouth.logo = "${pkgs.nixos-icons}/share/icons/hicolor/48x48/apps/nix-snowflake-colours.png";
+  stylix.targets.qt.enable = false;
 }
