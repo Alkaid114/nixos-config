@@ -6,6 +6,8 @@
     git
     gdb
     gnumake
+    man-pages
+    man-pages-posix
   ];
   services.envfs.enable = true;
   programs.nix-ld = {
