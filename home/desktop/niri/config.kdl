@@ -450,3 +450,4 @@ debug {
 include optional=true "dms/colors.kdl"
 include optional=true "dms/layout.kdl"
 include optional=true "dms/outputs.kdl"
+include optional=true "noctalia.kdl"
