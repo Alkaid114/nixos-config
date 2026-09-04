@@ -64,6 +64,7 @@ Debian = "󰣚"
 Redhat = "󱄛"
 RedHatEnterprise = "󱄛"
 NixOS = "[](fg:blue)"
+Kali = ""
 
 [username]
 show_always = true
