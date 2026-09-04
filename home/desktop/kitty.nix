@@ -43,6 +43,10 @@
 
       # emoji
       symbol_map U+1F300-U+1FAD6 Noto Color Emoji
+
+      # Unicode Symbols
+      symbol_map U+2300-U+23FF Noto Sans Symbols 2
+      symbol_map U+2700-U+27BF Noto Sans Symbols 2
     '';
   };
 }
