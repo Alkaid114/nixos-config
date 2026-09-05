@@ -5,6 +5,7 @@
     [
       libreoffice
       mpv
+      localsend
     ]
     ++ (with kdePackages; [
       okular
