@@ -3,6 +3,7 @@ if status is-interactive
     set fish_greeting ""
     fish_config theme choose "catppuccin-mocha"
     alias ls="lsd"
+    direnv hook fish | source
 end
 
 set -U __done_min_cmd_duration 30000

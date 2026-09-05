@@ -15,7 +15,11 @@
 
   programs.fish = {
     enable = true;
-    shellInit = pkgs.lib.fileContents ./config.fish;
+    shellInit = pkgs.lib.fileContents ./config.fish + ''
+      if status is-interactive
+        ${pkgs.direnv}/bin/direnv hook fish | source
+      end
+    '';
     plugins = [
       {
         name = "fzf-fish";

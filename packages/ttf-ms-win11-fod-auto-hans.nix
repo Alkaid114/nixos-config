@@ -8,23 +8,25 @@ let
     hash = "sha256-/b2Hws1puoTvLqadW0aJODVdDWNLfeehmISA+UcTpzg=";
   };
 in
-pkgs.runCommand "ttf-ms-win11-fod-auto-hans-${version}" {
-  outputHash = "sha256-DAQAZQLk69k6cUUN8mvXKXcs0Pbx4QrQ3jOJpKxWKp0=";
-  outputHashMode = "recursive";
-  outputHashAlgo = "sha256";
-  nativeBuildInputs = [ pkgs.p7zip ];
-  meta = with pkgs.lib; {
-    description = "Microsoft Windows 11 Hans supplemental fonts (DengXian, SimHei, KaiTi, FangSong), extracted from the official ISO";
-    license = licenses.unfree;
-    platforms = platforms.all;
-  };
-} ''
-  7z e -y -o$TMPDIR ${iso} \
-    'LanguagesAndOptionalFeatures/Microsoft-Windows-LanguageFeatures-Fonts-Hans-Package~31bf3856ad364e35~amd64~~.cab'
-  mkdir -p $out/share/fonts/truetype
-  cd $out/share/fonts/truetype
-  7z e -aoa \
-    "$TMPDIR/Microsoft-Windows-LanguageFeatures-Fonts-Hans-Package~31bf3856ad364e35~amd64~~.cab" \
-    '*/Dengb.ttf' '*/Dengl.ttf' '*/Deng.ttf' \
-    '*/simfang.ttf' '*/simhei.ttf' '*/simkai.ttf'
-''
+pkgs.runCommand "ttf-ms-win11-fod-auto-hans-${version}"
+  {
+    outputHash = "sha256-DAQAZQLk69k6cUUN8mvXKXcs0Pbx4QrQ3jOJpKxWKp0=";
+    outputHashMode = "recursive";
+    outputHashAlgo = "sha256";
+    nativeBuildInputs = [ pkgs.p7zip ];
+    meta = with pkgs.lib; {
+      description = "Microsoft Windows 11 Hans supplemental fonts (DengXian, SimHei, KaiTi, FangSong), extracted from the official ISO";
+      license = licenses.unfree;
+      platforms = platforms.all;
+    };
+  }
+  ''
+    7z e -y -o$TMPDIR ${iso} \
+      'LanguagesAndOptionalFeatures/Microsoft-Windows-LanguageFeatures-Fonts-Hans-Package~31bf3856ad364e35~amd64~~.cab'
+    mkdir -p $out/share/fonts/truetype
+    cd $out/share/fonts/truetype
+    7z e -aoa \
+      "$TMPDIR/Microsoft-Windows-LanguageFeatures-Fonts-Hans-Package~31bf3856ad364e35~amd64~~.cab" \
+      '*/Dengb.ttf' '*/Dengl.ttf' '*/Deng.ttf' \
+      '*/simfang.ttf' '*/simhei.ttf' '*/simkai.ttf'
+  ''
