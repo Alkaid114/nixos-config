@@ -27,5 +27,9 @@
     kernel.sysctl = {
       "kernel.sysrq" = 1;
     };
+    tmp = {
+      useTmpfs = true;
+      tmpfsSize = "75%";
+    };
   };
 }
