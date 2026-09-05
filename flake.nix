@@ -14,21 +14,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # quickshell = {
-    #   url = "git+https://git.outfoxxed.me/quickshell/quickshell";
-    #   inputs.nixpkgs.follows = "nixpkgs";
-    # };
-
-    # dms = {
-    #   url = "github:AvengeMedia/DankMaterialShell/stable";
-    #   inputs.nixpkgs.follows = "nixpkgs";
-    # };
-
-    # dms-plugin-registry = {
-    #   url = "github:AvengeMedia/dms-plugin-registry";
-    #   inputs.nixpkgs.follows = "nixpkgs";
-    # };
-
     zen-browser = {
       url = "github:0xc000022070/zen-browser-flake";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -97,6 +82,11 @@
         { pkgs, system, ... }:
         {
           formatter = pkgs.nixfmt-tree;
+          packages = {
+            ttf-ms-win11-auto = pkgs.callPackage ./packages/ttf-ms-win11-auto.nix { };
+            ttf-ms-win11-auto-zh_cn = pkgs.callPackage ./packages/ttf-ms-win11-auto-zh_cn.nix { };
+            ttf-ms-win11-fod-auto-hans = pkgs.callPackage ./packages/ttf-ms-win11-fod-auto-hans.nix { };
+          };
         };
     };
 }

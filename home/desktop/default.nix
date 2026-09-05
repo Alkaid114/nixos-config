@@ -1,7 +1,6 @@
 { ... }:
 {
   imports = [
-    # ./dms-shell.nix
     ./fcitx5.nix
     ./fuzzel.nix
     ./kanshi.nix
