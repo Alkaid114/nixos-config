@@ -20,7 +20,7 @@ let
         export __GLX_VENDOR_LIBRARY_NAME=nvidia
     fi
 
-    case "$1" in
+    case "$*" in
       *obs*|*gpu-screen-recorder*|*com.tencent.wemeet*)
         unset __NV_PRIME_RENDER_OFFLOAD
         unset __VK_LAYER_NV_optimus
