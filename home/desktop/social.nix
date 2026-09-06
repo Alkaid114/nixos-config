@@ -4,5 +4,6 @@
     qq
     feishu
     # wechat
+    thunderbird-bin
   ];
 }
