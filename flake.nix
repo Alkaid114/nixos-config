@@ -28,6 +28,14 @@
       flake =
         let
           username = "alkaid";
+          genRev = {
+            system.configurationRevision = self.rev or null;
+            system.nixos.label =
+              if self ? lastModifiedDate && self ? shortRev then
+                "${builtins.substring 0 8 self.lastModifiedDate}.${self.shortRev}"
+              else
+                "0-dirty";
+          };
         in
         {
           nixosConfigurations = {
@@ -41,6 +49,7 @@
                 ./modules/gaming
                 ./modules/virtual
                 inputs.stylix.nixosModules.stylix
+                genRev
               ];
             };
             iso = inputs.nixpkgs.lib.nixosSystem {
