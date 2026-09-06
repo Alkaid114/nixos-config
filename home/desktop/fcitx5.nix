@@ -84,7 +84,12 @@ in
 
   home.sessionVariables = {
     XMODIFIERS = "@im=fcitx";
-    GTK_IM_MODULE = "fcitx";
+    QT_IM_MODULE = "fcitx";
+    GLFW_IM_MODULE = "ibus";
+  };
+
+  systemd.user.sessionVariables = {
+    XMODIFIERS = "@im=fcitx";
     QT_IM_MODULE = "fcitx";
     GLFW_IM_MODULE = "ibus";
   };
