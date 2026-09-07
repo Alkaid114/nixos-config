@@ -16,6 +16,33 @@
     ../../modules/hardware/printing.nix
   ];
 
+  fileSystems = {
+    "/home".options = [
+      "compress=zstd:3"
+      "noatime"
+    ];
+    "/root".options = [
+      "compress=zstd:3"
+      "noatime"
+    ];
+    "/var/log".options = [
+      "compress=zstd:3"
+      "noatime"
+    ];
+    "/var/cache".options = [
+      "compress=zstd:3"
+      "noatime"
+    ];
+    "/var/tmp".options = [
+      "compress=zstd:3"
+      "noatime"
+    ];
+    "/nix".options = [
+      "compress=zstd:3"
+      "noatime"
+    ];
+  };
+
   # services.udev.packages = [ nvidia-cfg ];
   # boot.extraModprobeConfig = builtins.readFile "${nvidia-cfg}/lib/modprobe.d/nvidia.conf";
 
