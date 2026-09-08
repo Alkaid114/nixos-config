@@ -41,12 +41,13 @@
       # 额外扩展区
       symbol_map U+20000-U+2A6DF Noto Sans Mono CJK SC
 
-      # emoji
-      symbol_map U+1F300-U+1FAD6 Noto Color Emoji
+      # Emoji and pictographs. Keep these before the generic symbol mappings.
+      symbol_map U+1F000-U+1FAFF Noto Color Emoji
+      symbol_map U+2600-U+27BF Noto Color Emoji
+      symbol_map U+2300-U+23FF Noto Color Emoji
 
-      # Unicode Symbols
-      symbol_map U+2300-U+23FF Noto Sans Symbols 2
-      symbol_map U+2700-U+27BF Noto Sans Symbols 2
+      # Unicode Symbols not covered by the emoji font
+      symbol_map U+2300-U+25FF Noto Sans Symbols 2
     '';
   };
 }
