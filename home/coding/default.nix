@@ -5,7 +5,7 @@
 {
   imports = [
     ./git.nix
-    ./vscode.nix
+    ./editor.nix
     ./ai.nix
   ];
 
