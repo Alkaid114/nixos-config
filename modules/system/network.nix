@@ -3,6 +3,11 @@
   networking = {
     networkmanager = {
       enable = true;
+      unmanaged = [
+        "interface-name:Meta"
+        "interface-name:Mihomo"
+        "interface-name:FlClash"
+      ];
       insertNameservers = [
         "223.5.5.5"
         "223.6.6.6"
