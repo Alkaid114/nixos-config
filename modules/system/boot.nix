@@ -1,8 +1,4 @@
-{
-  pkgs,
-  lib,
-  ...
-}:
+{ lib, pkgs, ... }:
 {
   fileSystems."/boot".options = lib.mkForce [ "umask=0077" ];
 
@@ -13,15 +9,28 @@
         efiSysMountPoint = "/boot";
       };
       limine = {
-        enable = false;
-        efiSupport = true;
-      };
-      systemd-boot = {
         enable = true;
+        efiSupport = true;
         extraInstallCommands = ''
-          ${pkgs.systemd}/bin/bootctl install --esp-path=/boot --efi-boot-option-description=NixOS
+          declare -A seen=()
+          ${pkgs.efibootmgr}/bin/efibootmgr -v | while IFS= read -r line; do
+            case "$line" in
+              Boot[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]\**HD\(*)
+                entry="''${line#Boot????\* }"
+                entry="''${entry%%$'\t'*}"
+                [ "$entry" = "Limine" ] && continue
+                [ -n "''${seen[$entry]:-}" ] && continue
+                seen["$entry"]=1
+                printf '\n/%s\n  protocol: efi_boot_entry\n  entry: %s\n' \
+                  "$entry" "$entry" >> /boot/limine/limine.conf
+                ;;
+            esac
+          done
         '';
+        style.interface.resolution = "2560x1600";
+        resolution = "2560x1600x32";
       };
+      systemd-boot.enable = false;
     };
     kernelPackages = pkgs.linuxPackages_zen;
     kernel.sysctl = {
