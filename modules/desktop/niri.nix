@@ -1,18 +1,17 @@
-{
-  pkgs,
-  ...
-}:
+{ pkgs, lib, ... }:
 {
   services.xserver.xkb.layout = "us";
 
   programs.niri = {
     enable = true;
     useNautilus = true;
-    package = pkgs.niri.overrideAttrs (oldAttrs: {
-      patches = (oldAttrs.patches or [ ]) ++ [
-        ../../patches/niri-shm-2604.patch
-      ];
-    });
+    package = lib.mkDefault (
+      pkgs.niri.overrideAttrs (oldAttrs: {
+        patches = (oldAttrs.patches or [ ]) ++ [
+          ../../patches/niri-shm-2604.patch
+        ];
+      })
+    );
   };
 
   environment.systemPackages = with pkgs; [

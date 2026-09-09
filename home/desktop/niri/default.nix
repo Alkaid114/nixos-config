@@ -40,7 +40,10 @@ in
   ];
   programs.cava.enable = true;
   xdg.configFile."niri/config.kdl".text =
-    builtins.readFile ./config.kdl + "\n" + "include optional=true \"fuzzel.kdl\"\n";
+    builtins.readFile ./config.kdl
+    + "\n"
+    + "include optional=true \"render-device.kdl\"\n"
+    + "include optional=true \"fuzzel.kdl\"\n";
   xdg.configFile."niri/fuzzel.kdl".text = ''
     binds {
         Mod+D { spawn-sh "fuzzel --launch-prefix=${gpuSelectfuzzel}"; }

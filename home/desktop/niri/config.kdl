@@ -110,7 +110,6 @@ layout {
 }
 
 environment {
-  WLR_RENDERER "vulkan"
   DISPLAY ":0"
   _JAVA_AWT_WM_NONREPARENTING "1"
   XIM "fcitx"
@@ -270,9 +269,6 @@ binds {
     Mod+Shift+Slash { show-hotkey-overlay; }
 
     Mod+T hotkey-overlay-title="Open a Terminal" { spawn-sh "kitty --class float-kitty"; }
-    Mod+D hotkey-overlay-title="Run an Application" {
-    	  spawn-sh "fuzzel --launch-prefix=$HOME/.config/niri/fuzzel-auto-gpu-select.sh"
-    }
     Super+Alt+L hotkey-overlay-title="Lock the Screen: swaylock" { spawn "swaylock"; }
 
     Super+Alt+S allow-when-locked=true hotkey-overlay-title=null { spawn-sh "pkill orca || exec orca"; }
