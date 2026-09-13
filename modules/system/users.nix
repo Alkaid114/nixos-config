@@ -14,6 +14,7 @@
       "render"
       "input"
       "podman"
+      "libvirtd"
     ];
   };
 }
