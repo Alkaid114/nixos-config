@@ -26,6 +26,7 @@
     nvtopPackages.nvidia
     nvtopPackages.intel
     kdePackages.partitionmanager
+    kdePackages.filelight
   ];
 
   programs.obs-studio = {

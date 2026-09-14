@@ -10,6 +10,5 @@
     ++ (with kdePackages; [
       okular
       gwenview
-      filelight
     ]);
 }
