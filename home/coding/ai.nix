@@ -14,5 +14,7 @@
           "$@"
       '';
     })
+    # ai tool
+    ripwire
   ];
 }
