@@ -12,6 +12,7 @@
     ../../modules/hardware/keyboard.nix
     ../../modules/hardware/audio.nix
     ../../modules/hardware/printing.nix
+    ../../modules/hardware/mouse.nix
     (import ../../modules/desktop/niri-dual-gpu.nix {
       inherit pkgs lib;
       igpuPciAddress = "0000:06:00.0";
