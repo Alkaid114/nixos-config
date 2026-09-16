@@ -36,6 +36,7 @@
               else
                 "0-dirty";
           };
+          overlays = import ./overlays { inherit inputs; };
         in
         {
           nixosConfigurations = {
@@ -76,6 +77,9 @@
               modules = [
                 ./home
                 {
+                  nixpkgs.overlays = overlays;
+                }
+                {
                   home = {
                     inherit username;
                     homeDirectory = "/home/${username}";
@@ -88,7 +92,7 @@
           };
         };
       perSystem =
-        { pkgs, system, ... }:
+        { pkgs, ... }:
         {
           formatter = pkgs.nixfmt-tree;
           packages = {
