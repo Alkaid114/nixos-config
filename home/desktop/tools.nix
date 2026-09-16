@@ -7,6 +7,7 @@
       mpv
       localsend
       piper
+      blender
     ]
     ++ (with kdePackages; [
       okular
