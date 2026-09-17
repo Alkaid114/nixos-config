@@ -3,6 +3,7 @@
   fonts = {
     packages = with pkgs; [
       inter
+      jetbrains-mono
       material-icons
       noto-fonts
       noto-fonts-cjk-sans
@@ -33,8 +34,9 @@
         "Noto Color Emoji"
       ];
       monospace = [
-        "JetBrainsMono Nerd Font"
+        "JetBrains Mono"
         "Noto Sans Mono CJK SC"
+        "Noto Sans Symbols 2"
         "Noto Color Emoji"
       ];
       emoji = [ "Noto Color Emoji" ];

@@ -4,8 +4,8 @@
     enable = true;
     themeFile = "Catppuccin-Mocha";
     font = {
-      package = pkgs.nerd-fonts.jetbrains-mono;
-      name = "JetBrainsMono Nerd Font";
+      package = pkgs.jetbrains-mono;
+      name = "JetBrains Mono";
       size = 13;
     };
     shellIntegration = {
@@ -29,25 +29,9 @@
       shell = "${pkgs.fish}/bin/fish";
     };
     extraConfig = ''
-      # 基础汉字
-      symbol_map U+4E00-U+9FFF Noto Sans Mono CJK SC
-
-      # CJK标点符号
-      symbol_map U+3000-U+303F Noto Sans Mono CJK SC
-
-      # 全角ASCII及闭合字母数字
-      symbol_map U+FF00-U+FFEF Noto Sans Mono CJK SC
-
-      # 额外扩展区
-      symbol_map U+20000-U+2A6DF Noto Sans Mono CJK SC
-
-      # Emoji and pictographs. Keep these before the generic symbol mappings.
-      symbol_map U+1F000-U+1FAFF Noto Color Emoji
-      symbol_map U+2600-U+27BF Noto Color Emoji
-      symbol_map U+2300-U+23FF Noto Color Emoji
-
-      # Unicode Symbols not covered by the emoji font
-      symbol_map U+2300-U+25FF Noto Sans Symbols 2
+      # Standard Unicode uses kitty/fontconfig fallback by actual glyph coverage.
+      # Only Nerd Font private-use codepoints need an explicit mapping.
+      symbol_map U+E000-U+E00A,U+E0A0-U+E0A2,U+E0A3,U+E0B0-U+E0B3,U+E0B4-U+E0C8,U+E0CA,U+E0CC-U+E0D7,U+E200-U+E2A9,U+E300-U+E3E3,U+E5FA-U+E6B7,U+E700-U+E8EF,U+EA60-U+EC1E,U+ED00-U+EFCE,U+F000-U+F2FF,U+F300-U+F381,U+F400-U+F533,U+F0001-U+F1AF0 Symbols Nerd Font Mono
     '';
   };
 }
