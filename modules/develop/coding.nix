@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 {
   environment.systemPackages = with pkgs; [
     nixd
@@ -51,6 +51,9 @@
 
       nspr
       nss
+
+      cudaPackages.cuda_cudart
+      config.hardware.nvidia.package
     ];
   };
   programs.direnv.enable = true;
