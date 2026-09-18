@@ -5,6 +5,7 @@
     [
       libreoffice
       mpv
+      vlc
       localsend
       piper
       blender
