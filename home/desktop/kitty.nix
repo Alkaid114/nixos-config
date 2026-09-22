@@ -27,6 +27,7 @@
       narrow_symbols_precomposed = true;
       shell_integration = "enabled no-cursor";
       shell = "${pkgs.fish}/bin/fish";
+      term = "xterm-256color";
     };
     extraConfig = ''
       # Standard Unicode uses kitty/fontconfig fallback by actual glyph coverage.
