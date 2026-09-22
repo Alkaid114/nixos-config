@@ -15,6 +15,7 @@
       "input"
       "podman"
       "libvirtd"
+      "dialout"
     ];
   };
 }
