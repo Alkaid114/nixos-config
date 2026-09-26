@@ -9,6 +9,7 @@
       localsend
       piper
       blender
+      qbittorrent
     ]
     ++ (with kdePackages; [
       okular
