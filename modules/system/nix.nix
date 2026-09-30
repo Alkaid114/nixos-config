@@ -7,9 +7,9 @@
 }:
 {
   nix.registry.nixpkgs.flake = inputs.nixpkgs;
-  nix.nixPath = [ "nixpkgs=${inputs.nixpkgs}" ];
   nix.package = pkgs.nixVersions.latest;
   nix.settings = {
+    nix-path = [ "nixpkgs=${inputs.nixpkgs}" ];
     experimental-features = [
       "nix-command"
       "flakes"

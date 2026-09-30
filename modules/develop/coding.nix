@@ -52,6 +52,20 @@
       nspr
       nss
 
+      # bundled Qt5 需要这些
+      fontconfig
+      freetype
+      dbus
+      libdrm
+      krb5
+      libxcb
+      libxcb-image
+      libxcb-keysyms
+      libxcb-render-util
+      libxcb-wm
+      libice
+      libsm
+
       cudaPackages.cuda_cudart
       config.hardware.nvidia.package
     ];
