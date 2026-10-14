@@ -11,8 +11,8 @@
 
   home.packages = with pkgs; [
     uv
-    nodejs_24
     filezilla
+    typst
   ];
 
   # home.sessionVariables.PATH = "${pkgs.bun}/bin:${config.home.homeDirectory}/.bun/bin:$PATH";
