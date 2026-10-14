@@ -46,7 +46,7 @@ in
     + "include optional=true \"fuzzel.kdl\"\n";
   xdg.configFile."niri/fuzzel.kdl".text = ''
     binds {
-        Mod+D { spawn-sh "fuzzel --launch-prefix=${gpuSelectfuzzel}"; }
+        Mod+E { spawn-sh "fuzzel --launch-prefix=${gpuSelectfuzzel}"; }
     }
   '';
 
