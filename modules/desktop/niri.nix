@@ -27,6 +27,7 @@
   services = {
     gvfs.enable = true;
     gnome.gnome-keyring.enable = true;
+    gnome.localsearch.enable = true;
   };
 
   xdg = {
