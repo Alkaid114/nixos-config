@@ -10,7 +10,7 @@ let
 in
 {
   home.packages = [
-    llm-agents-pkgs.opencode
+    llm-agents-pkgs.opencode2
     pkgs.cc-switch
     dshWithPnpm
     llm-agents-pkgs.chatgpt

@@ -1,4 +1,3 @@
 { ... }:
 [
-  (import ./opencode.nix)
 ]
