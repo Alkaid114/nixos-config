@@ -9,11 +9,12 @@ let
   });
 in
 {
-  home.packages = with pkgs; [
-    opencode
-    cc-switch
+  home.packages = [
+    llm-agents-pkgs.opencode
+    pkgs.cc-switch
     dshWithPnpm
+    llm-agents-pkgs.chatgpt
     # ai tool
-    ripwire
+    pkgs.ripwire
   ];
 }
