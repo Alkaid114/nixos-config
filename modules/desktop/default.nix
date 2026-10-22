@@ -4,7 +4,7 @@
     ./infra.nix
     ./tools.nix
     ./browser.nix
-    ./niri.nix
+    ./niri
     ./dm.nix
     ./proxy.nix
     ./shell.nix

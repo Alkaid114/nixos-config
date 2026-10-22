@@ -1,24 +1,41 @@
-{ pkgs, lib, ... }:
-# let
-#   nvidia-cfg = pkgs.callPackage ../../packages/nvidia-laptop-power-cfg.nix {};
-# in
+{ ... }:
 {
   imports = [
     ./hardware-configuration.nix
-    ../../modules/hardware/bluetooth.nix
-    ../../modules/hardware/amdgpu.nix
-    ../../modules/hardware/nvidia.nix
-    ../../modules/hardware/wifi.nix
-    ../../modules/hardware/keyboard.nix
-    ../../modules/hardware/audio.nix
-    ../../modules/hardware/printing.nix
-    ../../modules/hardware/mouse.nix
-    (import ../../modules/desktop/niri-dual-gpu.nix {
-      inherit pkgs lib;
+    ../../modules/system
+    ../../modules/hardware
+    ../../modules/desktop
+    ../../modules/develop
+    ../../modules/gaming
+    ../../modules/virtual
+  ];
+
+  my = {
+    hardware = {
+      amdgpu.enable = true;
+      audio.enable = true;
+      bluetooth.enable = true;
+      keyboard.enable = true;
+      mouse.enable = true;
+      printing.enable = true;
+      wifi.enable = true;
+
+      nvidia = {
+        enable = true;
+        prime = {
+          enable = true;
+          nvidiaBusId = "PCI:1:0:0";
+          amdgpuBusId = "PCI:6:0:0";
+        };
+      };
+    };
+
+    desktop.niri.renderDevice = {
+      enable = true;
       igpuPciAddress = "0000:06:00.0";
       dgpuPciAddress = "0000:01:00.0";
-    })
-  ];
+    };
+  };
 
   fileSystems = {
     "/".options = [
@@ -51,26 +68,8 @@
     ];
   };
 
-  # services.udev.packages = [ nvidia-cfg ];
-  # boot.extraModprobeConfig = builtins.readFile "${nvidia-cfg}/lib/modprobe.d/nvidia.conf";
-
   networking = {
     hostName = "asus-tx5pro";
-  };
-
-  hardware = {
-    nvidia = {
-      prime = {
-        offload = {
-          enable = true;
-          enableOffloadCmd = true;
-          offloadCmdMainProgram = "prime-run";
-        };
-        nvidiaBusId = "PCI:1:0:0";
-        amdgpuBusId = "PCI:6:0:0";
-      };
-      powerManagement.finegrained = true;
-    };
   };
 
   powerManagement = {

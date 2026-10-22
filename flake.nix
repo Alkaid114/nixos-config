@@ -46,12 +46,7 @@
               specialArgs = { inherit username inputs; };
               modules = [
                 ./hosts/asus-tx5pro
-                ./modules/system
-                ./modules/desktop
-                ./modules/develop
-                ./modules/gaming
-                ./modules/virtual
-                inputs.stylix.nixosModules.stylix
+                { nixpkgs.overlays = overlays; }
                 genRev
               ];
             };
@@ -88,7 +83,6 @@
                     stateVersion = "26.05";
                   };
                 }
-                inputs.stylix.homeModules.stylix
               ];
             };
           };

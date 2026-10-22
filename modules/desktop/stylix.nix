@@ -1,8 +1,12 @@
-{ pkgs, ... }:
+{ inputs, pkgs, ... }:
 let
   theme = "catppuccin-mocha";
 in
 {
+  imports = [
+    inputs.stylix.nixosModules.stylix
+  ];
+
   stylix.enable = true;
   stylix.autoEnable = true;
   stylix.targets.console.enable = false;
