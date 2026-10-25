@@ -13,7 +13,6 @@ in
     llm-agents-pkgs.opencode2
     pkgs.cc-switch
     dshWithPnpm
-    llm-agents-pkgs.chatgpt
     # ai tool
     pkgs.ripwire
   ];
