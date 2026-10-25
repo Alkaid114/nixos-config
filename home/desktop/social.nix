@@ -2,7 +2,6 @@
 {
   home.packages = with pkgs; [
     qq
-    feishu
     # wechat
     thunderbird-bin
   ];

@@ -10,6 +10,7 @@
       piper
       blender
       qbittorrent
+      gimp
     ]
     ++ (with kdePackages; [
       okular
