@@ -11,6 +11,7 @@
       blender
       qbittorrent
       gimp
+      evtest
     ]
     ++ (with kdePackages; [
       okular
