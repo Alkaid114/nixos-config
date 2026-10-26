@@ -86,6 +86,13 @@
               ];
             };
           };
+
+          templates = {
+            c-with-clangd = {
+              path = ./templates/c-with-clangd;
+              description = "GCC C/C++ development environment with Clangd";
+            };
+          };
         };
       perSystem =
         { pkgs, ... }:
