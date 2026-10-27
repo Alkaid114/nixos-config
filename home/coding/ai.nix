@@ -15,5 +15,6 @@ in
     dshWithPnpm
     # ai tool
     pkgs.ripwire
+    (pkgs.callPackage ../../packages/qodercli.nix { })
   ];
 }
