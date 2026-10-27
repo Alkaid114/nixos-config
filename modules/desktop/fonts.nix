@@ -20,6 +20,7 @@
       (pkgs.callPackage ../../packages/ttf-ms-win11-auto.nix { })
       (pkgs.callPackage ../../packages/ttf-ms-win11-auto-zh_cn.nix { })
       (pkgs.callPackage ../../packages/ttf-ms-win11-fod-auto-hans.nix { })
+      (pkgs.callPackage ../../packages/fusion-jetbrains-maple-mono.nix { })
     ];
     enableDefaultPackages = false;
     fontconfig.defaultFonts = {

@@ -102,6 +102,7 @@
             ttf-ms-win11-auto = pkgs.callPackage ./packages/ttf-ms-win11-auto.nix { };
             ttf-ms-win11-auto-zh_cn = pkgs.callPackage ./packages/ttf-ms-win11-auto-zh_cn.nix { };
             ttf-ms-win11-fod-auto-hans = pkgs.callPackage ./packages/ttf-ms-win11-fod-auto-hans.nix { };
+            fusion-jetbrains-maple-mono = pkgs.callPackage ./packages/fusion-jetbrains-maple-mono.nix { };
           };
         };
     };
