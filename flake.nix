@@ -20,6 +20,8 @@
     };
 
     llm-agents.url = "github:numtide/llm-agents.nix";
+
+    ghostty.url = "github:ghostty-org/ghostty/v1.4.0";
   };
 
   outputs =

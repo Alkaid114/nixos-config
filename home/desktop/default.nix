@@ -5,6 +5,7 @@
     ./fuzzel.nix
     ./kanshi.nix
     ./kitty.nix
+    ./ghostty.nix
     ./niri
     ./social.nix
     ./stylix.nix
