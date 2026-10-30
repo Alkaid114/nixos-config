@@ -4,7 +4,6 @@ command_timeout = 100
 
 format = """
 $os\
-$username\
 $directory\
 $git_branch\
 $git_status\
@@ -74,7 +73,7 @@ format = '[ $user]($style)'
 
 [directory]
 style = "fg:sapphire"
-format = " in[ $path ]($style)"
+format = " [ $path ]($style)"
 truncate_to_repo = true
 truncation_length = 3
 truncation_symbol = "…/"
