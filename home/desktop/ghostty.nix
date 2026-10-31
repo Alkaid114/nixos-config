@@ -1,4 +1,4 @@
-{ pkgs, inputs, ... }:
+{ pkgs, ... }:
 let
   cursorShader = pkgs.fetchFromGitHub {
     owner = "sahaj-b";
@@ -10,7 +10,6 @@ in
 {
   programs.ghostty = {
     enable = true;
-    package = inputs.ghostty.packages.${pkgs.stdenv.hostPlatform.system}.default;
     systemd.enable = true;
     enableBashIntegration = true;
     enableZshIntegration = true;
