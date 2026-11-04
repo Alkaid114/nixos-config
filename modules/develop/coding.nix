@@ -52,6 +52,7 @@
         libXrender
         libXtst
         libXrandr
+        vulkan-loader
 
         alsa-lib
         libpulseaudio
