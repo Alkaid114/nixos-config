@@ -1,4 +1,9 @@
-{ pkgs, inputs, ... }:
+{
+  pkgs,
+  inputs,
+  config,
+  ...
+}:
 let
   llm-agents-pkgs = inputs.llm-agents.packages.${pkgs.stdenv.hostPlatform.system};
   dsh = llm-agents-pkgs.dsh;
@@ -17,4 +22,7 @@ in
     pkgs.ripwire
     (pkgs.callPackage ../../packages/qodercli.nix { })
   ];
+
+  xdg.configFile."opencode/AGENTS.md".source =
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/nixos-config/home/coding/AGENTS.md";
 }
