@@ -20,9 +20,14 @@
 
 ## File Reading and Command Output
 
-- Do not use `cat` to read file contents. Use the `read` tool instead.
-- Do not pipe any command output through `head` or `tail`. Tools handle large output natively.
-- `cat` remains acceptable for heredoc file creation, piping into another command, or very small system files. Avoid long heredoc content because truncation can leave the shell waiting for the delimiter.
+- Read files with the `read` tool, not `cat`/`sed`/`awk`. Edit files with the `edit` tool, not `sed -i`/`awk`.
+- Do not trim command output yourself, whether with `head`, `tail`, `sed -n`, `awk 'NR==...'`, or similar. Tools handle large output natively; short output is returned in full, long output keeps head and tail.
+- `cat` is fine for heredoc file creation, piping into another command, or very small system files. Avoid long heredoc content because truncation can leave the shell waiting for the delimiter.
+- `sed`/`awk` are fine for pure in-stream transformation, e.g. `cmd | sed 's/foo/bar/'`, when no dedicated tool fits.
+
+## Command Execution
+
+- Do not use `cd ... && command`. Use the bash tool's `workdir` parameter instead.
 
 ## Formatting
 
