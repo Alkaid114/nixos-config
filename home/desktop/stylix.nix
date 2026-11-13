@@ -20,9 +20,9 @@ in
   stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/${theme}.yaml";
   stylix.targets.fontconfig.enable = false;
   stylix.cursor = {
-    size = 18;
-    package = pkgs.kdePackages.breeze;
-    name = "breeze_cursors";
+    size = 20;
+    package = pkgs.bibata-cursors;
+    name = "Bibata-Modern-Ice";
   };
   stylix.fonts = {
     serif = {
