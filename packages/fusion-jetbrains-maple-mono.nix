@@ -7,11 +7,11 @@
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "fusion-jetbrains-maple-mono";
-  version = "1.2304.79";
+  version = "1.2304.78"; # nb，同一个版本天天触发github action哈希还能变的，那就只能用上一个旧版本了
 
   src = fetchurl {
-    url = "https://github.com/SpaceTimee/Fusion-JetBrainsMapleMono/releases/download/${finalAttrs.version}/JetBrainsMapleMono-NF-NR-XX-XX.zip";
-    sha256 = "sha256-CsWFGbCMDCuDXGgcEzQPiEwPWmwtK3IIjvXGLlGIarQ=";
+    url = "https://github.com/SpaceTimee/Fusion-JetBrainsMapleMono/releases/download/${finalAttrs.version}/JetBrainsMapleMono-NF-NR-XX.zip";
+    sha256 = "sha256-tPI9dUcHe4eGAF3+4OSIrnsiUkFAlAG4qUGBaBSkJ6g=";
   };
 
   nativeBuildInputs = [ unzip ];
