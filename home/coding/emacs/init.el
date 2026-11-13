@@ -8,36 +8,13 @@
 (scroll-bar-mode -1)              ; 隐藏滚动条
 (setq display-line-numbers-width 4)
 (setopt elisp-fontify-semantically t)
+(global-auto-revert-mode 1)
 (set-frame-font "Jetbrains Maple Mono-14" nil t)
 (set-face-attribute 'default nil
 		    :family "Jetbrains Maple Mono"
 		    :height 140)
 (setq catppuccin-flavor 'mocha)
 (load-theme 'catppuccin t)
-
-(use-package display-line-numbers
-  :ensure nil ; 内置包
-  :init
-  (setq display-line-numbers-width 4)
-  :config
-  (global-display-line-numbers-mode 1)
-
-  ;; 根据当前状态切换行号类型
-  (defun my-evil-line-numbers-setup ()
-    (if (eq evil-state 'insert)
-        ;; Insert 模式：设为 nil 彻底隐藏，或者设为 t 显示绝对行号
-        (setq display-line-numbers-type t) 
-      ;; Normal / Visual 模式：显示相对行号
-      (setq display-line-numbers-type 'relative))
-    
-    ;; 强制刷新当前缓冲区的行号显示
-    (when (bound-and-true-p display-line-numbers-mode)
-      (display-line-numbers-mode 1)))
-
-  ;; 把函数挂载到 Evil 的状态切换钩子上
-  (add-hook 'evil-insert-state-entry-hook #'my-evil-line-numbers-setup)
-  (add-hook 'evil-normal-state-entry-hook #'my-evil-line-numbers-setup)
-  (add-hook 'evil-replace-state-entry-hook #'my-evil-line-numbers-setup))
 
 ;; 设置一个专门存放垃圾文件的目录
 (defvar my-backup-dir (expand-file-name "var/backups" user-emacs-directory))
@@ -90,22 +67,100 @@
 (add-to-list 'recentf-exclude "\\.emacs\\.d/var/")
 (add-to-list 'recentf-exclude "^/tmp/")
 
-;; Evil
-(use-package evil
-  :ensure t
-  :init
-  (setq evil-want-integration t)   ; 与 Emacs 原生键位集成）
-  (setq evil-want-keybinding nil)  ; 交给 evil-collection 处理
-  :config
-  (setq evil-undo-system 'undo-tree)
-  (evil-mode 1))
+(defun meow-setup ()
+  (setq meow-cheatsheet-layout meow-cheatsheet-layout-qwerty)
+  (meow-motion-define-key
+   '("k" . meow-next)
+   '("i" . meow-prev)
+   '("<escape>" . ignore))
+  (meow-leader-define-key
+   ;; Use SPC (0-9) for digit arguments.
+   '("1" . meow-digit-argument)
+   '("2" . meow-digit-argument)
+   '("3" . meow-digit-argument)
+   '("4" . meow-digit-argument)
+   '("5" . meow-digit-argument)
+   '("6" . meow-digit-argument)
+   '("7" . meow-digit-argument)
+   '("8" . meow-digit-argument)
+   '("9" . meow-digit-argument)
+   '("0" . meow-digit-argument)
+   '("/" . meow-keypad-describe-key)
+   '("?" . meow-cheatsheet))
+  (meow-normal-define-key
+   '("0" . meow-expand-0)
+   '("9" . meow-expand-9)
+   '("8" . meow-expand-8)
+   '("7" . meow-expand-7)
+   '("6" . meow-expand-6)
+   '("5" . meow-expand-5)
+   '("4" . meow-expand-4)
+   '("3" . meow-expand-3)
+   '("2" . meow-expand-2)
+   '("1" . meow-expand-1)
+   '("-" . negative-argument)
+   '(";" . meow-reverse)
+   '("," . meow-inner-of-thing)
+   '("." . meow-bounds-of-thing)
+   '("[" . meow-beginning-of-thing)
+   '("]" . meow-end-of-thing)
+   '("a" . meow-append)
+   '("A" . meow-open-below)
+   '("b" . meow-back-word)
+   '("B" . meow-back-symbol)
+   '("c" . meow-change)
+   '("d" . meow-delete)
+   '("D" . meow-backward-delete)
+   '("e" . meow-next-word)
+   '("E" . meow-next-symbol)
+   '("f" . meow-find)
+   '("g" . meow-cancel-selection)
+   '("G" . meow-grab)
+   '("j" . meow-left)
+   '("J" . meow-left-expand)
+   '("h" . meow-insert)
+   '("H" . meow-open-above)
+   '("k" . meow-next)
+   '("K" . meow-next-expand)
+   '("i" . meow-prev)
+   '("I" . meow-prev-expand)
+   '("l" . meow-right)
+   '("L" . meow-right-expand)
+   '("m" . meow-join)
+   '("n" . meow-search)
+   '("o" . meow-block)
+   '("O" . meow-to-block)
+   '("p" . meow-yank)
+   '("q" . meow-quit)
+   '("Q" . meow-goto-line)
+   '("r" . meow-replace)
+   '("R" . meow-swap-grab)
+   '("s" . meow-kill)
+   '("t" . meow-till)
+   '("u" . meow-undo)
+   '("U" . meow-undo-in-selection)
+   '("v" . meow-visit)
+   '("w" . meow-mark-word)
+   '("W" . meow-mark-symbol)
+   '("x" . meow-line)
+   '("X" . meow-goto-line)
+   '("y" . meow-save)
+   '("Y" . meow-sync-grab)
+   '("z" . meow-pop-selection)
+   '("'" . repeat)
+   '("<escape>" . ignore)))
 
-;; evil-collection
-(use-package evil-collection
+(use-package meow
   :ensure t
-  :after evil
+  :demand t
+  :init
+  (meow-global-mode 1)
   :config
-  (evil-collection-init)) ; 启用所有
+  (meow-setup)
+  ;; 相对行号
+  (meow-setup-line-number)
+  ;; 设置模式指示器
+  (meow-setup-indicator))
 
 ;; doom-modeline状态栏
 (use-package doom-modeline
@@ -138,8 +193,21 @@
 ;; markdown-mode
 (use-package markdown-mode
   :ensure t
+  :custom
+  (setq markdown-enable-math t)
   :mode (("\\.md\\'" . markdown-mode)
          ("\\.markdown\\'" . markdown-mode)))
+
+(use-package company-math
+  :ensure t
+  :config
+  (add-to-list 'company-backends 'company-math-symbols-latex))
+
+(add-hook 'markdown-mode-hook
+          (lambda ()
+            (setq-local company-backends
+                        (append '((company-math-symbols-latex company-math-symbols-unicode))
+                                company-backends))))
 
 (use-package avy
   :ensure t
@@ -151,12 +219,6 @@
   (setq avy-style 'at)
   ;; 限制avy只在当前窗口生效
   (setq avy-all-windows nil))
-
-(use-package evil-avy
-  :ensure t
-  :after (avy evil)
-  :config
-  (evil-avy-mode 1))
 
 (use-package consult
   :ensure t
@@ -173,55 +235,54 @@
   (setq completion-category-defaults nil)
   (setq completion-category-overrides '((file (styles basic partial-completion)))))
 
-(use-package general
-  :ensure t
-  :config
-  ;; 设置 SPC 为 Evil 的 Leader 键
-  (general-evil-setup t)
-  
-  ;; 创建统一的定义器
-  (general-create-definer my-leader-def
-    :states '(normal visual motion)
-    :keymaps 'override
-    :prefix "SPC")
+;; (use-package general
+;;   :ensure t
+;;   :config
+;;   (general-override-mode 1)
+;;   (general-auto-unbind-keys)
 
-  ;; 定义菜单树
-  (my-leader-def
-    ;; Buffer 相关
-    "b"  '(:ignore t :which-key "buffers")
-    "bb" '(consult-buffer :which-key "switch buffer")
-    "bd" '(kill-current-buffer :which-key "kill buffer")
-    "bi" '(ibuffer :which-key "ibuffer list")
-    
-    ;; 文件/目录 相关
-    "f"  '(:ignore t :which-key "files")
-    "ff" '(find-file :which-key "find file")
-    "fd" '(dired :which-key "open dired")
-    
-    ;; 搜索 相关
-    "s"  '(:ignore t :which-key "search")
-    "sl" '(consult-line :which-key "search in buffer")
-    "sg" '(consult-ripgrep :which-key "search in project")
-    
-    ;; 窗口 相关
-    "w"  '(:ignore t :which-key "windows")
-    "wh" '(evil-window-left :which-key "window left")
-    "wj" '(evil-window-down :which-key "window down")
-    "wk" '(evil-window-up :which-key "window up")
-    "wl" '(evil-window-right :which-key "window right")
-    "wd" '(evil-window-delete :which-key "close window")
-    "wo" '(delete-other-windows :which-key "close other windows")
+;;   ;; 让general的Leader键作用于Meow的NORMAL和MOTION状态
+;;   (general-create-definer my-leader-def
+;;     :keymaps '(meow-motion-state-keymap meow-normal-state-keymap)
+;;     :prefix "SPC")
 
-    ;; 跳转 (Avy) 相关
-    "j"  '(:ignore t :which-key "jump (avy)")
-    "jc" '(avy-goto-char :which-key "goto char")
-    "jw" '(avy-goto-word-0 :which-key "goto word")
-    "jl" '(avy-goto-line :which-key "goto line")
+;;   ;; 定义菜单树
+;;   (my-leader-def
+;;     ;; Buffer 相关
+;;     "b"  '(:ignore t :which-key "buffers")
+;;     "bb" '(consult-buffer :which-key "switch buffer")
+;;     "bd" '(kill-current-buffer :which-key "kill buffer")
+;;     "bi" '(ibuffer :which-key "ibuffer list")
 
-    ;; Git (Magit) 相关
-    "g"  '(:ignore t :which-key "git")
-    "gg" '(magit-status :which-key "magit status")
-    "gl" '(magit-log-current :which-key "magit log")))
+;;     ;; 文件/目录 相关
+;;     "f"  '(:ignore t :which-key "files")
+;;     "ff" '(find-file :which-key "find file")
+;;     "fd" '(dired :which-key "open dired")
+
+;;     ;; 搜索 相关
+;;     "s"  '(:ignore t :which-key "search")
+;;     "sl" '(consult-line :which-key "search in buffer")
+;;     "sg" '(consult-ripgrep :which-key "search in project")
+
+;;     ;; 窗口 相关
+;;     "w"  '(:ignore t :which-key "windows")
+;;     "wh" '(evil-window-left :which-key "window left")
+;;     "wj" '(evil-window-down :which-key "window down")
+;;     "wk" '(evil-window-up :which-key "window up")
+;;     "wl" '(evil-window-right :which-key "window right")
+;;     "wd" '(evil-window-delete :which-key "close window")
+;;     "wo" '(delete-other-windows :which-key "close other windows")
+
+;;     ;; 跳转 (Avy) 相关
+;;     "j"  '(:ignore t :which-key "jump (avy)")
+;;     "jc" '(avy-goto-char :which-key "goto char")
+;;     "jw" '(avy-goto-word-0 :which-key "goto word")
+;;     "jl" '(avy-goto-line :which-key "goto line")
+
+;;     ;; Git (Magit) 相关
+;;     "g"  '(:ignore t :which-key "git")
+;;     "gg" '(magit-status :which-key "magit status")
+;;     "gl" '(magit-log-current :which-key "magit log")))
 
 (use-package copilot
   :ensure t

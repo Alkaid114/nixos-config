@@ -15,12 +15,10 @@
         markdown-mode
         dashboard
         doom-modeline
+        meow
         nerd-icons
-        evil
-        evil-collection
         catppuccin-theme
         avy
-        evil-avy
         consult
         consult-flycheck
         orderless
@@ -29,6 +27,7 @@
         treesit-auto
         apheleia
         vertico
+	      company-math
       ]
       ++ (with pkgs; [
         # 其他工具
